@@ -1,9 +1,5 @@
 // @ts-nocheck
-import { neon, neonConfig } from '@neondatabase/serverless'
-import { PrismaNeon } from '@prisma/adapter-neon'
-
-// Use HTTP fetch mode for serverless (no WebSocket required)
-neonConfig.fetchConnectionCache = true
+import { PrismaNeonHttp } from '@prisma/adapter-neon'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: any | undefined
@@ -12,16 +8,13 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient() {
   const { PrismaClient } = require('../generated/prisma/client')
   
-  // Use neon() HTTP client for serverless — much simpler than Pool
   const connectionString = process.env.DATABASE_URL
   if (!connectionString) {
     throw new Error('DATABASE_URL environment variable is not set')
   }
   
-  // NeonHttp adapter approach
-  const { Pool } = require('@neondatabase/serverless')
-  const pool = new Pool({ connectionString })
-  const adapter = new PrismaNeon(pool)
+  // Use HTTP-based adapter — no WebSocket, perfect for serverless
+  const adapter = new PrismaNeonHttp(connectionString)
   
   return new PrismaClient({ adapter })
 }

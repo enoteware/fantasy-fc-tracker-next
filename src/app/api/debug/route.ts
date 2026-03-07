@@ -8,47 +8,27 @@ export async function GET() {
       DATABASE_URL: process.env.DATABASE_URL ? '***SET***' : 'NOT SET',
       NODE_ENV: process.env.NODE_ENV,
     },
-    hasPool: false,
-    hasPrismaClient: false,
+    dbUrlLength: process.env.DATABASE_URL?.length,
+    dbUrlStart: process.env.DATABASE_URL?.substring(0, 20),
+    dbUrlEnd: process.env.DATABASE_URL?.slice(-10),
     connectionTest: null,
     error: null,
   }
 
   try {
-    const { Pool } = require('@neondatabase/serverless')
-    info.hasPool = true
+    const { PrismaNeonHttp } = require('@prisma/adapter-neon')
+    info.hasAdapter = true
 
-    const { PrismaNeon } = require('@prisma/adapter-neon')
-    info.hasPrismaAdapter = true
-
-    // Try loading the generated client
-    try {
-      const generatedClient = require('../../../generated/prisma/client')
-      info.hasPrismaClient = typeof generatedClient.PrismaClient === 'function'
-    } catch (e) {
-      info.prismaClientError = String(e)
-    }
+    const { PrismaClient } = require('../../../generated/prisma/client')
+    info.hasPrismaClient = true
 
     if (process.env.DATABASE_URL) {
-      const dbUrl = process.env.DATABASE_URL
-      info.dbUrlLength = dbUrl.length
-      info.dbUrlStart = dbUrl.substring(0, 20)
-      info.dbUrlEnd = dbUrl.substring(dbUrl.length - 10)
+      const adapter = new PrismaNeonHttp(process.env.DATABASE_URL)
+      const prisma = new PrismaClient({ adapter })
       
-      try {
-        const pool = new Pool({ connectionString: dbUrl })
-        info.poolCreated = true
-        const adapter = new PrismaNeon(pool)
-        
-        const { PrismaClient } = require('../../../generated/prisma/client')
-        const prisma = new PrismaClient({ adapter })
-        
-        const count = await prisma.fantasy_fc_players.count()
-        info.connectionTest = `success: ${count} players`
-        await prisma.$disconnect()
-      } catch (dbErr) {
-        info.dbError = String(dbErr)
-      }
+      const count = await prisma.fantasy_fc_players.count()
+      info.connectionTest = `success: ${count} players`
+      await prisma.$disconnect()
     }
   } catch (e) {
     info.error = String(e)
