@@ -16,6 +16,42 @@ function isDefOrGK(pos: string) {
   return ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB'].includes(pos)
 }
 
+// Competitions to exclude from match history and upcoming fixtures
+const EXCLUDE_COMPETITION_KEYWORDS = [
+  'cup', 'copa', 'coppa', 'coupe', 'taca', 'taça', 'pokal', 'supercup', 'super cup',
+  'champions league', 'europa league', 'conference league', 'world cup',
+  'friendly', 'international', 'knockout', 'playoff', 'play-off',
+  'nations league', 'continental',
+]
+
+function isLeagueMatch(league: string | null, competition?: string | null): boolean {
+  const check = ((league ?? '') + ' ' + (competition ?? '')).toLowerCase()
+  return !EXCLUDE_COMPETITION_KEYWORDS.some(kw => check.includes(kw))
+}
+
+// Club name normalization — match.club may use a different spelling than player.club
+const CLUB_ALIASES: Record<string, string[]> = {
+  'Ajax': ['AFC Ajax'],
+  'Al Ahli': ['Al-Ahli'],
+  'Barcelona': ['FC Barcelona'],
+  'Bayer Leverkusen': ['Bayer 04 Leverkusen'],
+  'Bayern Munich (W)': ['FC Bayern München', 'Bayern München'],
+  'C.D. Nacional': ['CD Nacional'],
+  'Lyon': ['Olympique Lyonnais', 'OL'],
+  'Manchester United': ['Manchester Utd'],
+  'Manchester City': ['Manchester City WFC'],
+  'OM': ['Olympique de Marseille'],
+  'Paris SG': ['Paris Saint-Germain'],
+  'SL Benfica': ['Benfica'],
+  'Spurs': ['Tottenham Hotspur'],
+}
+
+function sameClub(playerClub: string, matchClub: string): boolean {
+  if (playerClub === matchClub) return true
+  const aliases = CLUB_ALIASES[playerClub] ?? []
+  return aliases.some(a => a.toLowerCase() === matchClub.toLowerCase())
+}
+
 async function getPlayer(id: number) {
   const player = await prisma.fantasy_fc_players.findUnique({
     where: { id },
@@ -25,7 +61,7 @@ async function getPlayer(id: number) {
       fantasy_fc_player_matches: {
         include: { fantasy_fc_matches: true },
         orderBy: { id: 'desc' },
-        take: 10,
+        take: 20, // fetch more, will filter below
       },
     },
   })
@@ -34,7 +70,7 @@ async function getPlayer(id: number) {
   const fixtures = await prisma.fantasy_fc_upcoming_fixtures.findMany({
     where: { club: player.club },
     orderBy: { match_date: 'asc' },
-    take: 5,
+    take: 10, // fetch more, filter below
   })
 
   // Count games played (each row in player_matches = 1 game)
@@ -42,7 +78,38 @@ async function getPlayer(id: number) {
     where: { player_id: id },
   })
 
-  return { player, fixtures, card_image: getCardImage(player.name), gamesPlayed: gamesPlayedCount }
+  // Filter fixtures to league-only competitions
+  const leagueFixtures = fixtures.filter(f => isLeagueMatch(f.league, f.competition)).slice(0, 5)
+
+  // Filter player matches to league-only, and fix perspective when club names differ
+  const leagueMatches = player.fantasy_fc_player_matches
+    .filter(pm => {
+      const m = pm.fantasy_fc_matches
+      if (!m) return false
+      return isLeagueMatch(m.league)
+    })
+    .map(pm => {
+      const m = pm.fantasy_fc_matches!
+      // If the match record is from the opponent's perspective (scraper bug fallback),
+      // flip the data so we always show from the player's club's view
+      if (!sameClub(player.club, m.club)) {
+        return {
+          ...pm,
+          fantasy_fc_matches: {
+            ...m,
+            club: player.club,
+            opponent: m.club,       // the stored "club" is actually the opponent
+            score_for: m.score_against,
+            score_against: m.score_for,
+            result: m.result === 'win' ? 'loss' : m.result === 'loss' ? 'win' : 'draw',
+          }
+        }
+      }
+      return pm
+    })
+    .slice(0, 10)
+
+  return { player, fixtures: leagueFixtures, leagueMatches, card_image: getCardImage(player.name), gamesPlayed: gamesPlayedCount }
 }
 
 function StatBar({ label, value, max = 99 }: { label: string; value: number; max?: number }) {
@@ -110,7 +177,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const data = await getPlayer(numId)
   if (!data) notFound()
 
-  const { player, fixtures, card_image, gamesPlayed } = data
+  const { player, fixtures, leagueMatches, card_image, gamesPlayed } = data
   const stats = player.fantasy_fc_player_stats
   const position = player.position
   const defender = isDefOrGK(position)
@@ -417,9 +484,9 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
             {/* Recent Matches */}
             <div className="bg-[#1a1a1a] rounded-xl p-5">
               <h2 className="text-white font-semibold mb-4">Recent Matches</h2>
-              {player.fantasy_fc_player_matches.length > 0 ? (
+              {leagueMatches.length > 0 ? (
                 <div className="space-y-2">
-                  {player.fantasy_fc_player_matches.map(pm => {
+                  {leagueMatches.map(pm => {
                     const m = pm.fantasy_fc_matches
                     if (!m) return null
                     return (
