@@ -103,7 +103,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   return (
     <div className="min-h-screen bg-[#0f0f0f]">
       {/* Header */}
-      <header className="border-b border-white/5 bg-[#0f0f0f]/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-white/5 bg-[#0f0f0f]/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link href="/" className="text-white/40 hover:text-white transition-colors text-sm">
             ← Dashboard
@@ -113,13 +113,14 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left: Card + Attributes */}
-          <div className="space-y-6">
-            {/* FC Card */}
-            <div className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-[#1a1a1a] shadow-2xl shadow-black/50">
+      <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+        {/* Mobile: vertical stack. Desktop: 3-col grid */}
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8">
+
+          {/* Card + Meta — full-width on mobile, left col on desktop */}
+          <div className="space-y-4 sm:space-y-6">
+            {/* FC Card — full width on mobile, capped on desktop */}
+            <div className="relative mx-auto w-full max-w-[280px] sm:max-w-none aspect-[2/3] rounded-2xl overflow-hidden bg-[#1a1a1a] shadow-2xl shadow-black/50">
               {card_image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={card_image} alt={player.name} className="w-full h-full object-contain" />
@@ -140,7 +141,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                 </div>
               )}
             </div>
-            
+
             {/* Player Meta */}
             <div className="space-y-1">
               <h1 className="text-white font-bold text-2xl">{player.name}</h1>
@@ -157,7 +158,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                 )}
               </div>
             </div>
-            
+
             {/* Attributes */}
             <div className="bg-[#1a1a1a] rounded-xl p-4 space-y-3">
               <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Attributes</h2>
@@ -167,8 +168,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
 
-          {/* Right: Stats, Matches, Fixtures */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Right: Stats, Matches, Fixtures — full width mobile, 2-col on desktop */}
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             
             {/* Season Stats */}
             <div className="bg-[#1a1a1a] rounded-xl p-5">
@@ -253,11 +254,11 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                     if (!m) return null
                     return (
                       <div key={pm.id} className="flex items-center justify-between text-sm py-2 border-b border-white/5 last:border-0">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
                           <ResultChip result={m.result} />
-                          <div>
-                            <span className="text-white">vs {m.opponent}</span>
-                            <span className="text-white/40 ml-2 text-xs">{m.score_for}–{m.score_against}</span>
+                          <div className="min-w-0">
+                            <span className="text-white truncate block max-w-[120px] sm:max-w-none">vs {m.opponent}</span>
+                            <span className="text-white/40 text-xs">{m.score_for}–{m.score_against}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-white/40">
