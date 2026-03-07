@@ -1,12 +1,9 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PrismaClient } = require('../generated/prisma/client')
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PrismaNeon } = require('@prisma/adapter-neon')
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { Pool } = require('@neondatabase/serverless')
+// @ts-nocheck
+import { Pool } from '@neondatabase/serverless'
+import { PrismaNeon } from '@prisma/adapter-neon'
+import { PrismaClient } from '../generated/prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   prisma: any | undefined
 }
 
@@ -16,7 +13,6 @@ function createPrismaClient() {
   return new PrismaClient({ adapter })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const prisma: any = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
