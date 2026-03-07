@@ -2,6 +2,7 @@
 import { prisma } from '@/lib/db'
 import { getCardImage } from '@/lib/cards'
 import { PlayerGrid } from '@/components/PlayerGrid'
+import { DebugModal } from '@/components/DebugModal'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,6 +91,7 @@ export default async function DashboardPage() {
   
   const team1Count = players.filter(p => p.team === 1).length
   const team2Count = players.filter(p => p.team === 2).length
+  const sbcObjCount = players.filter(p => p.team === 0).length
   const totalUpgrades = players.reduce((sum, p) => sum + (p.upgrades_applied ?? 0), 0)
   
   return (
@@ -134,6 +136,10 @@ export default async function DashboardPage() {
               <span className="text-white">{team2Count}</span> Team 2 players
             </div>
             <div className="flex items-center gap-2 text-white/60 shrink-0">
+              <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+              <span className="text-white">{sbcObjCount}</span> SBC/OBJ players
+            </div>
+            <div className="flex items-center gap-2 text-white/60 shrink-0">
               <span>⚡</span>
               <span className="text-white">{totalUpgrades}</span> total upgrades applied
             </div>
@@ -152,6 +158,9 @@ export default async function DashboardPage() {
           Fantasy FC Tracker · Data updates 2x daily · Not affiliated with EA Sports
         </div>
       </footer>
+
+      {/* Debug Modal — desktop only, fixed bottom-right */}
+      <DebugModal />
     </div>
   )
 }

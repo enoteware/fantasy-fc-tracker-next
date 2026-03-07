@@ -189,6 +189,15 @@ export function PlayerCard({ player }: { player: Player }) {
             </div>
           </div>
 
+          {/* SBC / OBJ badge */}
+          {player.team === 0 && (
+            <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2">
+              <Badge className="bg-yellow-500/90 text-black text-[9px] border-0 px-1 py-0 shadow-lg font-bold">
+                SBC/OBJ
+              </Badge>
+            </div>
+          )}
+
           {/* Upgrade Badge */}
           {hasUpgrades && (
             <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2">
