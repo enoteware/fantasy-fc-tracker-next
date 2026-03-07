@@ -1,0 +1,532 @@
+{
+  "ethan nwaneri": {
+    "primary": "#663622",
+    "secondary": "#4b403a",
+    "accent": "#b64927"
+  },
+  "viktor gyokeres": {
+    "primary": "#925039",
+    "secondary": "#463830",
+    "accent": "#ef0624"
+  },
+  "tijjani reijnders": {
+    "primary": "#3a6d16",
+    "secondary": "#593c34",
+    "accent": "#5cac24"
+  },
+  "florian wirtz": {
+    "primary": "#871312",
+    "secondary": "#493c34",
+    "accent": "#f4464a"
+  },
+  "clara mateo": {
+    "primary": "#26285c",
+    "secondary": "#4d3e43",
+    "accent": "#656fb9"
+  },
+  "warren zaireemery": {
+    "primary": "#18345e",
+    "secondary": "#2d3b65",
+    "accent": "#a4445c"
+  },
+  "lauren james": {
+    "primary": "#14378c",
+    "secondary": "#222e39",
+    "accent": "#3866cc"
+  },
+  "harry kewell": {
+    "primary": "#811c1c",
+    "secondary": "#4f312c",
+    "accent": "#dc3f3d"
+  },
+  "ji sung park": {
+    "primary": "#81061d",
+    "secondary": "#64402c",
+    "accent": "#e4184a"
+  },
+  "conor gallagher": {
+    "primary": "#04040c",
+    "secondary": "#4d3d3b",
+    "accent": "#a44c44"
+  },
+  "paul onuachu": {
+    "primary": "#7c0b1d",
+    "secondary": "#2c1918",
+    "accent": "#bc3c4c"
+  },
+  "arda guler": {
+    "primary": "#50301c",
+    "secondary": "#543c33",
+    "accent": "#c45444"
+  },
+  "celia sasic": {
+    "primary": "#5c2c0c",
+    "secondary": "#44322d",
+    "accent": "#c69083"
+  },
+  "vangelis pavlidis": {
+    "primary": "#981a16",
+    "secondary": "#5b372a",
+    "accent": "#fc4c4c"
+  },
+  "tabitha chawinga": {
+    "primary": "#4f2b18",
+    "secondary": "#73403b",
+    "accent": "#ca3a4f"
+  },
+  "ivan zamorano": {
+    "primary": "#5c3a27",
+    "secondary": "#2e2e4a",
+    "accent": "#d1aa94"
+  },
+  "john arne riise": {
+    "primary": "#9c0405",
+    "secondary": "#950304",
+    "accent": "#ed1e28"
+  },
+  "denise osullivan": {
+    "primary": "#850608",
+    "secondary": "#88624c",
+    "accent": "#e10d3c"
+  },
+  "pablo aimar": {
+    "primary": "#d1040f",
+    "secondary": "#43302a",
+    "accent": "#f4071c"
+  },
+  "matteo guendouzi": {
+    "primary": "#122c62",
+    "secondary": "#4e3a27",
+    "accent": "#bd9365"
+  },
+  "wesley sneijder": {
+    "primary": "#603b2c",
+    "secondary": "#2a3653",
+    "accent": "#547bb1"
+  },
+  "lewis miley": {
+    "primary": "#625121",
+    "secondary": "#4f4136",
+    "accent": "#ba9a40"
+  },
+  "pierre kalulu": {
+    "primary": "#643a27",
+    "secondary": "#4b4548",
+    "accent": "#9c5c44"
+  },
+  "andrej kramaric": {
+    "primary": "#04628a",
+    "secondary": "#3d2b25",
+    "accent": "#3b8ab3"
+  },
+  "adama traore diarra": {
+    "primary": "#69041c",
+    "secondary": "#513731",
+    "accent": "#b23049"
+  },
+  "jess park": {
+    "primary": "#890c18",
+    "secondary": "#584441",
+    "accent": "#f72b3e"
+  },
+  "oscar bobb": {
+    "primary": "#8f5c42",
+    "secondary": "#674333",
+    "accent": "#b1775b"
+  },
+  "enzo millot": {
+    "primary": "#0f795f",
+    "secondary": "#54423c",
+    "accent": "#31ba8f"
+  },
+  "goncalo manuel ganchinho guedes": {
+    "primary": "#283990",
+    "secondary": "#623932",
+    "accent": "#3954be"
+  },
+  "sepp van den berg": {
+    "primary": "#bc041c",
+    "secondary": "#815542",
+    "accent": "#f43046"
+  },
+  "martin baturina": {
+    "primary": "#04296b",
+    "secondary": "#3a3c4f",
+    "accent": "#2362cf"
+  },
+  "rafael marquez": {
+    "primary": "#0e255f",
+    "secondary": "#594339",
+    "accent": "#4464b7"
+  },
+  "estefania banini": {
+    "primary": "#04296f",
+    "secondary": "#5d4f56",
+    "accent": "#56aee4"
+  },
+  "tim cahill": {
+    "primary": "#102770",
+    "secondary": "#5d3428",
+    "accent": "#3150bb"
+  },
+  "hidetoshi nakata": {
+    "primary": "#7b0c18",
+    "secondary": "#5c3b34",
+    "accent": "#f22434"
+  },
+  "felix alexandre a sanches correia": {
+    "primary": "#770606",
+    "secondary": "#543a2d",
+    "accent": "#f60611"
+  },
+  "mika godts": {
+    "primary": "#7c0714",
+    "secondary": "#532e2a",
+    "accent": "#e60742"
+  },
+  "franziska harsch": {
+    "primary": "#04284f",
+    "secondary": "#2e3951",
+    "accent": "#2162c6"
+  },
+  "nerea nevado gomez": {
+    "primary": "#141d56",
+    "secondary": "#303370",
+    "accent": "#5791bc"
+  },
+  "joelle wedemeyer": {
+    "primary": "#24624a",
+    "secondary": "#655342",
+    "accent": "#c46444"
+  },
+  "caitlin cosme": {
+    "primary": "#747d14",
+    "secondary": "#9a6e45",
+    "accent": "#a5ad36"
+  },
+  "chiamaka nnadozie": {
+    "primary": "#b2502c",
+    "secondary": "#674635",
+    "accent": "#fc9d15"
+  },
+  "diego forlán": {
+    "primary": "#a43215",
+    "secondary": "#141c24",
+    "accent": "#f83b04"
+  },
+  "gervinho": {
+    "primary": "#673423",
+    "secondary": "#2b274c",
+    "accent": "#f83b04"
+  },
+  "víctor ibarbo": {
+    "primary": "#a13418",
+    "secondary": "#2b274c",
+    "accent": "#f83b04"
+  },
+  "joão cancelo": {
+    "primary": "#a33115",
+    "secondary": "#141c24",
+    "accent": "#f83b04"
+  },
+  "raheem sterling": {
+    "primary": "#9e381f",
+    "secondary": "#673e2e",
+    "accent": "#f83a05"
+  },
+  "waldemar anton": {
+    "primary": "#d3040f",
+    "secondary": "#141c24",
+    "accent": "#f83b04"
+  },
+  "tyrique george": {
+    "primary": "#a52f11",
+    "secondary": "#6b4036",
+    "accent": "#f83b04"
+  },
+  "sheraldo becker": {
+    "primary": "#a13315",
+    "secondary": "#69442e",
+    "accent": "#f83b04"
+  },
+  "joey veerman": {
+    "primary": "#904c14",
+    "secondary": "#5b3c30",
+    "accent": "#fb7c04"
+  },
+  "sam coffey": {
+    "primary": "#a43012",
+    "secondary": "#141c24",
+    "accent": "#f83b04"
+  },
+  "niclas füllkrug": {
+    "primary": "#dc0404",
+    "secondary": "#684030",
+    "accent": "#f83b04"
+  },
+  "orkun kökçü": {
+    "primary": "#a52e12",
+    "secondary": "#664431",
+    "accent": "#f83a05"
+  },
+  "gianluca scamacca": {
+    "primary": "#a52f10",
+    "secondary": "#141c24",
+    "accent": "#fb3b04"
+  },
+  "nelson deossa": {
+    "primary": "#a62f14",
+    "secondary": "#141c24",
+    "accent": "#f83b04"
+  },
+  "medina dešić": {
+    "primary": "#814e14",
+    "secondary": "#584234",
+    "accent": "#e24c04"
+  },
+  "luis henrique": {
+    "primary": "#a52f11",
+    "secondary": "#63432e",
+    "accent": "#f83b04"
+  },
+  "kristin kogel": {
+    "primary": "#043ba0",
+    "secondary": "#613d2f",
+    "accent": "#f83b04"
+  },
+  "kristin kögel": {
+    "primary": "#043ba0",
+    "secondary": "#613d2f",
+    "accent": "#f83b04"
+  },
+  "matteo ruggeri": {
+    "primary": "#621008",
+    "secondary": "#141c24",
+    "accent": "#fa3906"
+  },
+  "kalidou koulibaly": {
+    "primary": "#0964b1",
+    "secondary": "#141c24",
+    "accent": "#f83b04"
+  },
+  "hidemasa morita": {
+    "primary": "#a62c12",
+    "secondary": "#141c24",
+    "accent": "#fb3a05"
+  },
+  "sandie toletti": {
+    "primary": "#a43011",
+    "secondary": "#2c6431",
+    "accent": "#f83b04"
+  },
+  "odsonne édouard": {
+    "primary": "#a42f11",
+    "secondary": "#3d2721",
+    "accent": "#f83b04"
+  },
+  "ahmetcan kaplan": {
+    "primary": "#317061",
+    "secondary": "#6f473c",
+    "accent": "#ea3532"
+  },
+  "al owairan": {
+    "primary": "#0a3163",
+    "secondary": "#2d5933",
+    "accent": "#4a2fd3"
+  },
+  "aleix garcia": {
+    "primary": "#6331ae",
+    "secondary": "#27333e",
+    "accent": "#f5dd14"
+  },
+  "alex freeman": {
+    "primary": "#643e23",
+    "secondary": "#343341",
+    "accent": "#693dbe"
+  },
+  "antoine semenyo": {
+    "primary": "#6327aa",
+    "secondary": "#7f5544",
+    "accent": "#5d41b7"
+  },
+  "ben chilwell": {
+    "primary": "#2c3c8b",
+    "secondary": "#7f6048",
+    "accent": "#734fc1"
+  },
+  "bruno fernandes": {
+    "primary": "#72349d",
+    "secondary": "#352c38",
+    "accent": "#7d52c2"
+  },
+  "carolin simon": {
+    "primary": "#372b75",
+    "secondary": "#754b46",
+    "accent": "#fccc04"
+  },
+  "claire lavogez": {
+    "primary": "#2e3d74",
+    "secondary": "#7b6050",
+    "accent": "#7b52c3"
+  },
+  "clint dempsey": {
+    "primary": "#1c1f7d",
+    "secondary": "#2f2f63",
+    "accent": "#492fd3"
+  },
+  "cole palmer": {
+    "primary": "#7035a3",
+    "secondary": "#292531",
+    "accent": "#7b4fc2"
+  },
+  "deniz undav": {
+    "primary": "#750e15",
+    "secondary": "#2d243b",
+    "accent": "#ca1925"
+  },
+  "di natale": {
+    "primary": "#092b4e",
+    "secondary": "#373360",
+    "accent": "#217adf"
+  },
+  "donyell malen": {
+    "primary": "#6219b9",
+    "secondary": "#813a80",
+    "accent": "#6b3ec0"
+  },
+  "douglas luiz": {
+    "primary": "#6532b2",
+    "secondary": "#783f44",
+    "accent": "#e6d223"
+  },
+  "endrick": {
+    "primary": "#623499",
+    "secondary": "#354565",
+    "accent": "#683dbd"
+  },
+  "francisco moura": {
+    "primary": "#1538b2",
+    "secondary": "#1e242f",
+    "accent": "#1a9cd6"
+  },
+  "giovane": {
+    "primary": "#6238ac",
+    "secondary": "#2b4c56",
+    "accent": "#744fc1"
+  },
+  "grace kazadi": {
+    "primary": "#783226",
+    "secondary": "#7d5747",
+    "accent": "#286cda"
+  },
+  "jaap stam": {
+    "primary": "#14147b",
+    "secondary": "#343161",
+    "accent": "#8c3cc4"
+  },
+  "jill scott": {
+    "primary": "#0a2c54",
+    "secondary": "#373267",
+    "accent": "#492fd4"
+  },
+  "joao felix": {
+    "primary": "#3c840c",
+    "secondary": "#2f3036",
+    "accent": "#f5e538"
+  },
+  "j rgen strand larsen": {
+    "primary": "#383e97",
+    "secondary": "#754d42",
+    "accent": "#e4383f"
+  },
+  "keven schlotterbeck": {
+    "primary": "#af141b",
+    "secondary": "#40325c",
+    "accent": "#fccc04"
+  },
+  "matheus dias": {
+    "primary": "#888929",
+    "secondary": "#272b2e",
+    "accent": "#eed810"
+  },
+  "mats deji": {
+    "primary": "#74338e",
+    "secondary": "#352e51",
+    "accent": "#8547c2"
+  },
+  "mohammed noor": {
+    "primary": "#059f54",
+    "secondary": "#2f3062",
+    "accent": "#482fd3"
+  },
+  "moussa diaby": {
+    "primary": "#1e387c",
+    "secondary": "#644c36",
+    "accent": "#e8e620"
+  },
+  "noa lang": {
+    "primary": "#904d3b",
+    "secondary": "#6c3a2c",
+    "accent": "#f5697c"
+  },
+  "olivia holdt": {
+    "primary": "#9d2835",
+    "secondary": "#3d3f7b",
+    "accent": "#6b3ebf"
+  },
+  "paulo futre": {
+    "primary": "#086506",
+    "secondary": "#36305d",
+    "accent": "#ee0e09"
+  },
+  "rafael leao": {
+    "primary": "#952821",
+    "secondary": "#2d3247",
+    "accent": "#6738b9"
+  },
+  "ricardo horta": {
+    "primary": "#af2722",
+    "secondary": "#312d3b",
+    "accent": "#6838ba"
+  },
+  "robert lewandowski": {
+    "primary": "#213389",
+    "secondary": "#1d2d7b",
+    "accent": "#e73a81"
+  },
+  "romee leuchter": {
+    "primary": "#2b4197",
+    "secondary": "#704c48",
+    "accent": "#1ac5ef"
+  },
+  "salma paralluelo": {
+    "primary": "#152680",
+    "secondary": "#3f2424",
+    "accent": "#f4db19"
+  },
+  "stephanie catley": {
+    "primary": "#343d71",
+    "secondary": "#714a3c",
+    "accent": "#e8313a"
+  },
+  "tomas brolin": {
+    "primary": "#14147a",
+    "secondary": "#573734",
+    "accent": "#4450b1"
+  },
+  "tomas rosicky": {
+    "primary": "#131475",
+    "secondary": "#36325e",
+    "accent": "#d3121f"
+  },
+  "unai simon": {
+    "primary": "#6431b2",
+    "secondary": "#2c2c40",
+    "accent": "#f6de14"
+  },
+  "yaya toure": {
+    "primary": "#122574",
+    "secondary": "#463328",
+    "accent": "#ea8327"
+  }
+}

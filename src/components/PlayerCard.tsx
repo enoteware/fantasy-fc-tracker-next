@@ -48,6 +48,9 @@ interface Player {
   name: string
   club: string
   league: string | null
+  card_color_primary: string | null
+  card_color_secondary: string | null
+  card_color_accent: string | null
   position: string
   base_rating: number
   current_rating: number
@@ -149,9 +152,28 @@ export function PlayerCard({ player }: { player: Player }) {
 
   const csAchieved = defender && cleanSheets >= 1
 
+  // Dynamic gradient from card colors (Apple Music style)
+  const hasColors = !!player.card_color_primary
+  const cardBg = hasColors
+    ? `radial-gradient(ellipse at 50% -10%, ${player.card_color_primary}55 0%, ${player.card_color_secondary ?? player.card_color_primary}30 45%, #111 100%)`
+    : '#1a1a1a'
+  const hoverShadow = hasColors
+    ? `0 8px 32px ${player.card_color_accent ?? player.card_color_primary}40`
+    : undefined
+
   return (
     <Link href={`/players/${player.id}`} className="group block">
-      <div className={`relative rounded-xl overflow-hidden bg-[#1a1a1a] hover:border-blue-500/30 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 ${borderClass}`}>
+      <div
+        className={`relative rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-0.5 ${borderClass}`}
+        style={{ background: cardBg }}
+      >
+        {/* Accent glow layer — brightens on hover */}
+        {hasColors && (
+          <div
+            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl"
+            style={{ boxShadow: `inset 0 0 40px ${player.card_color_accent}25` }}
+          />
+        )}
 
         {/* Card Image — min 120px wide via aspect ratio + full-width container */}
         <div className="relative aspect-[2/3] bg-gradient-to-b from-[#1e2a3a] to-[#111] overflow-hidden">

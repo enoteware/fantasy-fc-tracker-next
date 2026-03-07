@@ -353,6 +353,9 @@ model fantasy_fc_players {
   league                    String?                     @db.VarChar(100)
   futbin_url                String?
   team                      Int?                        @default(1)
+  card_color_primary        String?                     @db.VarChar(7)
+  card_color_secondary      String?                     @db.VarChar(7)
+  card_color_accent         String?                     @db.VarChar(7)
   fantasy_fc_player_matches fantasy_fc_player_matches[]
   fantasy_fc_player_stats   fantasy_fc_player_stats?
   fantasy_fc_upgrades       fantasy_fc_upgrades[]

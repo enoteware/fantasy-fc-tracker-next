@@ -19,6 +19,9 @@ type Player = {
   team: number | null
   upgrades_applied: number
   card_image: string | null
+  card_color_primary: string | null
+  card_color_secondary: string | null
+  card_color_accent: string | null
   games_played: number
   stats: {
     goals: number
@@ -67,7 +70,7 @@ function Grid({ players }: { players: Player[] }) {
   )
 }
 
-type TabValue = 'all' | 'team1' | 'team2'
+type TabValue = 'all' | 'team1' | 'team2' | 'sbc'
 
 export function PlayerGrid({ players }: { players: Player[] }) {
   const [search, setSearch] = useState('')
@@ -116,8 +119,12 @@ export function PlayerGrid({ players }: { players: Player[] }) {
 
   const team1 = useMemo(() => players.filter(p => p.team === 1), [players])
   const team2 = useMemo(() => players.filter(p => p.team === 2), [players])
+  const sbcObj = useMemo(() => players.filter(p => p.team === 0), [players])
 
-  const currentPlayers = activeTab === 'all' ? players : activeTab === 'team1' ? team1 : team2
+  const currentPlayers = activeTab === 'all' ? players
+    : activeTab === 'team1' ? team1
+    : activeTab === 'team2' ? team2
+    : sbcObj
 
   const activeFiltersCount = [
     position !== 'all',
@@ -266,17 +273,22 @@ export function PlayerGrid({ players }: { players: Player[] }) {
       {/* ── Desktop tabs (hidden on mobile — bottom nav handles it) ── */}
       <div className="hidden md:block">
         <div className="flex gap-1 bg-[#1a1a1a] border border-white/10 rounded-lg p-1 w-fit">
-          {(['all', 'team1', 'team2'] as TabValue[]).map(tab => (
+          {([
+            { value: 'all',   label: `All (${players.length})` },
+            { value: 'team1', label: `Team 1 (${team1.length})` },
+            { value: 'team2', label: `Team 2 (${team2.length})` },
+            { value: 'sbc',   label: `SBC/OBJ (${sbcObj.length})` },
+          ] as { value: TabValue; label: string }[]).map(tab => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
               className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white'
+                activeTab === tab.value
+                  ? tab.value === 'sbc' ? 'bg-yellow-600 text-black' : 'bg-blue-600 text-white'
                   : 'text-white/50 hover:text-white'
               }`}
             >
-              {tab === 'all' ? `All (${players.length})` : tab === 'team1' ? `Team 1 (${team1.length})` : `Team 2 (${team2.length})`}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -316,6 +328,15 @@ export function PlayerGrid({ players }: { players: Player[] }) {
           >
             <UserX className="w-5 h-5" />
             <span>Team 2</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('sbc')}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors ${
+              activeTab === 'sbc' ? 'text-yellow-400' : 'text-white/40'
+            }`}
+          >
+            <span className="text-lg leading-none">🏆</span>
+            <span>SBC</span>
           </button>
           <button
             onClick={() => {

@@ -57,6 +57,9 @@ async function getPlayers() {
     team: player.team,
     upgrades_applied: player.upgrades_applied ?? 0,
     card_image: getCardImage(player.name),
+    card_color_primary: player.card_color_primary ?? null,
+    card_color_secondary: player.card_color_secondary ?? null,
+    card_color_accent: player.card_color_accent ?? null,
     games_played: gamesPlayedMap[player.id] ?? 0,
     stats: player.fantasy_fc_player_stats ? {
       goals: player.fantasy_fc_player_stats.goals ?? 0,
