@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { UpgradeProgressCard } from '@/components/UpgradeProgressCard'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,30 @@ function sameClub(playerClub: string, matchClub: string): boolean {
   if (playerClub === matchClub) return true
   const aliases = CLUB_ALIASES[playerClub] ?? []
   return aliases.some(a => a.toLowerCase() === matchClub.toLowerCase())
+}
+
+/**
+ * Find the date when a cumulative stat first crossed a threshold.
+ * Matches should be sorted oldest → newest.
+ */
+function findDateWhenThresholdCrossed(
+  matches: Array<{ goals: number | null; assists: number | null; clean_sheet: boolean | null; attacking_actions: number | null; defensive_actions: number | null; fantasy_fc_matches: { match_date: Date } | null }>,
+  stat: 'ga' | 'goals' | 'cs' | 'att_actions' | 'def_actions',
+  threshold: number,
+): Date | null {
+  let cumulative = 0
+  for (const pm of matches) {
+    if (!pm.fantasy_fc_matches) continue
+    if (stat === 'ga') cumulative += (pm.goals ?? 0) + (pm.assists ?? 0)
+    else if (stat === 'goals') cumulative += pm.goals ?? 0
+    else if (stat === 'cs') cumulative += pm.clean_sheet ? 1 : 0
+    else if (stat === 'att_actions') cumulative += pm.attacking_actions ?? 0
+    else if (stat === 'def_actions') cumulative += pm.defensive_actions ?? 0
+    if (cumulative >= threshold) {
+      return new Date(pm.fantasy_fc_matches.match_date)
+    }
+  }
+  return null
 }
 
 async function getPlayer(id: number) {
@@ -109,7 +134,27 @@ async function getPlayer(id: number) {
     })
     .slice(0, 10)
 
-  return { player, fixtures: leagueFixtures, leagueMatches, card_image: getCardImage(player.name), gamesPlayed: gamesPlayedCount }
+  // Build oldest→newest sorted matches for threshold date computation
+  const allLeagueMatchesSorted = player.fantasy_fc_player_matches
+    .filter(pm => {
+      const m = pm.fantasy_fc_matches
+      if (!m) return false
+      return isLeagueMatch(m.league)
+    })
+    .sort((a, b) => {
+      const da = new Date(a.fantasy_fc_matches!.match_date).getTime()
+      const db = new Date(b.fantasy_fc_matches!.match_date).getTime()
+      return da - db
+    })
+
+  return {
+    player,
+    fixtures: leagueFixtures,
+    leagueMatches,
+    card_image: getCardImage(player.name),
+    gamesPlayed: gamesPlayedCount,
+    allLeagueMatchesSorted,
+  }
 }
 
 function StatBar({ label, value, max = 99 }: { label: string; value: number; max?: number }) {
@@ -177,7 +222,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const data = await getPlayer(numId)
   if (!data) notFound()
 
-  const { player, fixtures, leagueMatches, card_image, gamesPlayed } = data
+  const { player, fixtures, leagueMatches, card_image, gamesPlayed, allLeagueMatchesSorted } = data
   const stats = player.fantasy_fc_player_stats
   const position = player.position
   const defender = isDefOrGK(position)
@@ -192,6 +237,53 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const relevantActions = defender ? defensiveActions : attackingActions
   const actionsLabel = defender ? '🛡️ Def. Actions' : '⚡ Att. Actions'
   const actionsEmoji = defender ? '🛡️' : '⚡'
+
+  // ── Upgrade earned dates (derived from match history) ──
+  const gaEarnedAt = (goals + assists >= 1)
+    ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'ga', 1)
+    : null
+  const csEarnedAt = (cleanSheets >= 1)
+    ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'cs', 1)
+    : null
+  const attActionsEarnedAt = (attackingActions >= ATT_ACTIONS_THRESHOLD)
+    ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'att_actions', ATT_ACTIONS_THRESHOLD)
+    : null
+  const defActionsEarnedAt = (defensiveActions >= DEF_ACTIONS_THRESHOLD)
+    ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'def_actions', DEF_ACTIONS_THRESHOLD)
+    : null
+  const goalsEarnedAt = (goals >= 10)
+    ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'goals', 10)
+    : null
+
+  const actionsEarnedAt = defender ? defActionsEarnedAt : attActionsEarnedAt
+  const primaryUpgradeEarnedAt = defender ? csEarnedAt : gaEarnedAt
+
+  // ── Upgrade applied dates — from fantasy_fc_upgrades rows ──
+  // Map upgrade_type strings to our upgrade categories
+  function findAppliedDate(type: string): Date | null {
+    const upgrade = player.fantasy_fc_upgrades.find(u => {
+      const t = (u.upgrade_type ?? '').toLowerCase()
+      return t.includes(type)
+    })
+    if (!upgrade || !upgrade.applied) return null
+    // No applied_at timestamp in schema — use earned_date if applied
+    return upgrade.applied ? new Date(upgrade.earned_date) : null
+  }
+
+  const gaAppliedAt = findAppliedDate('goal')
+  const csAppliedAt = findAppliedDate('clean')
+  const actionsAppliedAt = findAppliedDate('action')
+  const goalsAppliedAt = findAppliedDate('10') // e.g. "10 Goals"
+
+  // Also check player_stats applied booleans as fallback
+  const gaApplied = stats?.upgrade_goal_assist_applied ?? false
+  const actionsApplied = stats?.upgrade_actions_applied ?? false
+
+  // Merge: if stats says applied, treat as applied (use earned date as proxy)
+  const primaryAppliedAt = (defender ? csAppliedAt : gaAppliedAt) ??
+    (gaApplied && gaEarnedAt ? gaEarnedAt : null)
+  const actionsAppliedAtFinal = actionsAppliedAt ??
+    (actionsApplied && actionsEarnedAt ? actionsEarnedAt : null)
 
   // Border logic
   const achievedGA = goals + assists >= 1
@@ -382,72 +474,63 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                 )}
               </div>
 
-              {/* Upgrade Progress Bars */}
-              {stats && (
-                <div className="mt-5 space-y-3">
-                  <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Upgrade Progress</h3>
-                  
-                  {/* G/A Upgrade */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/60">⚽ Goal / Assist Upgrade</span>
-                      <span className={`font-semibold ${achievedGA ? 'text-green-400' : 'text-white/40'}`}>
-                        {goals + assists} / 1 {achievedGA ? '✓' : ''}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${achievedGA ? 'bg-green-500' : 'bg-blue-500'}`}
-                        style={{ width: `${Math.min(((goals + assists) / 1) * 100, 100)}%` }}
-                      />
-                    </div>
-                    {stats.upgrade_goal_assist_earned && (
-                      <p className={`text-xs ${stats.upgrade_goal_assist_applied ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {stats.upgrade_goal_assist_applied ? '✓ Applied' : '⏳ Earned — Pending Application'}
-                      </p>
-                    )}
-                  </div>
+              {/* Upgrade Progress Cards — new two-status design */}
+              <div className="mt-5 space-y-3">
+                <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Upgrade Progress</h3>
 
-                  {/* Actions Upgrade */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-white/60">{actionsLabel} Upgrade</span>
-                      <span className={`font-semibold ${achievedActions ? 'text-green-400' : 'text-white/40'}`}>
-                        {relevantActions} / {actionsThreshold} {achievedActions ? '✓' : ''}
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${achievedActions ? 'bg-green-500' : 'bg-purple-500'}`}
-                        style={{ width: `${Math.min((relevantActions / actionsThreshold) * 100, 100)}%` }}
-                      />
-                    </div>
-                    {stats.upgrade_actions_earned && (
-                      <p className={`text-xs ${stats.upgrade_actions_applied ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {stats.upgrade_actions_applied ? '✓ Applied' : '⏳ Earned — Pending Application'}
-                      </p>
-                    )}
-                  </div>
+                {/* Upgrade 1: G/A (FWD/MID) or Clean Sheet (DEF/GK) */}
+                {defender ? (
+                  <UpgradeProgressCard
+                    type="Clean Sheet"
+                    icon="🧤"
+                    threshold={1}
+                    current={cleanSheets}
+                    unit="clean sheets needed"
+                    reward="2nd PlayStyle+"
+                    earnedAt={csEarnedAt}
+                    appliedAt={csAppliedAt}
+                    gamesPlayed={Math.min(gamesPlayed, GAMES_WINDOW)}
+                  />
+                ) : (
+                  <UpgradeProgressCard
+                    type="G/A"
+                    icon="⚽"
+                    threshold={1}
+                    current={goals + assists}
+                    unit="goals + assists needed"
+                    reward="2nd PlayStyle+"
+                    earnedAt={gaEarnedAt}
+                    appliedAt={primaryAppliedAt}
+                    gamesPlayed={Math.min(gamesPlayed, GAMES_WINDOW)}
+                  />
+                )}
 
-                  {/* CS Upgrade (DEF/GK only) */}
-                  {defender && (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-white/60">🧤 Clean Sheet Upgrade</span>
-                        <span className={`font-semibold ${achievedCS ? 'text-green-400' : 'text-white/40'}`}>
-                          {cleanSheets} / 1 {achievedCS ? '✅' : ''}
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${achievedCS ? 'bg-green-500' : 'bg-cyan-500'}`}
-                          style={{ width: `${Math.min((cleanSheets / 1) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                {/* Upgrade 2: Actions */}
+                <UpgradeProgressCard
+                  type={defender ? 'Def. Actions' : 'Att. Actions'}
+                  icon={defender ? '🛡️' : '⚡'}
+                  threshold={actionsThreshold}
+                  current={relevantActions}
+                  unit={`${defender ? 'defensive' : 'attacking'} actions needed`}
+                  reward="5★ Skill Move or Weak Foot"
+                  earnedAt={actionsEarnedAt}
+                  appliedAt={actionsAppliedAtFinal}
+                  gamesPlayed={Math.min(gamesPlayed, GAMES_WINDOW)}
+                />
+
+                {/* Upgrade 3: 10 Goals — same for all */}
+                <UpgradeProgressCard
+                  type="10 Goals"
+                  icon="🔥"
+                  threshold={10}
+                  current={goals}
+                  unit="total goals needed"
+                  reward="Face Stat 99"
+                  earnedAt={goalsEarnedAt}
+                  appliedAt={goalsAppliedAt}
+                  gamesPlayed={Math.min(gamesPlayed, GAMES_WINDOW)}
+                />
+              </div>
             </div>
 
             {/* Upgrade Timeline */}
