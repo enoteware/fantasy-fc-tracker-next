@@ -30,15 +30,25 @@ export async function GET() {
     }
 
     if (process.env.DATABASE_URL) {
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-      const adapter = new PrismaNeon(pool)
+      const dbUrl = process.env.DATABASE_URL
+      info.dbUrlLength = dbUrl.length
+      info.dbUrlStart = dbUrl.substring(0, 20)
+      info.dbUrlEnd = dbUrl.substring(dbUrl.length - 10)
       
-      const { PrismaClient } = require('../../../generated/prisma/client')
-      const prisma = new PrismaClient({ adapter })
-      
-      const count = await prisma.fantasy_fc_players.count()
-      info.connectionTest = `success: ${count} players`
-      await prisma.$disconnect()
+      try {
+        const pool = new Pool({ connectionString: dbUrl })
+        info.poolCreated = true
+        const adapter = new PrismaNeon(pool)
+        
+        const { PrismaClient } = require('../../../generated/prisma/client')
+        const prisma = new PrismaClient({ adapter })
+        
+        const count = await prisma.fantasy_fc_players.count()
+        info.connectionTest = `success: ${count} players`
+        await prisma.$disconnect()
+      } catch (dbErr) {
+        info.dbError = String(dbErr)
+      }
     }
   } catch (e) {
     info.error = String(e)
