@@ -19,10 +19,13 @@ type Player = {
   team: number | null
   upgrades_applied: number
   card_image: string | null
+  games_played: number
   stats: {
     goals: number
     assists: number
     clean_sheets: number
+    attacking_actions: number
+    defensive_actions: number
     upgrade_goal_assist_earned: boolean
     upgrade_actions_earned: boolean
     upgrade_goal_assist_applied: boolean

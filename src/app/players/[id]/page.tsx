@@ -8,6 +8,14 @@ import { Progress } from '@/components/ui/progress'
 
 export const dynamic = 'force-dynamic'
 
+const GAMES_WINDOW = 4
+const ATT_ACTIONS_THRESHOLD = 6
+const DEF_ACTIONS_THRESHOLD = 12
+
+function isDefOrGK(pos: string) {
+  return ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB'].includes(pos)
+}
+
 async function getPlayer(id: number) {
   const player = await prisma.fantasy_fc_players.findUnique({
     where: { id },
@@ -29,7 +37,12 @@ async function getPlayer(id: number) {
     take: 5,
   })
 
-  return { player, fixtures, card_image: getCardImage(player.name) }
+  // Count games played (each row in player_matches = 1 game)
+  const gamesPlayedCount = await prisma.fantasy_fc_player_matches.count({
+    where: { player_id: id },
+  })
+
+  return { player, fixtures, card_image: getCardImage(player.name), gamesPlayed: gamesPlayedCount }
 }
 
 function StatBar({ label, value, max = 99 }: { label: string; value: number; max?: number }) {
@@ -68,6 +81,27 @@ function formatDate(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function GamesProgressBar({ gamesPlayed }: { gamesPlayed: number }) {
+  const clamped = Math.min(gamesPlayed, GAMES_WINDOW)
+  return (
+    <div className="flex items-center gap-1.5">
+      {Array.from({ length: GAMES_WINDOW }).map((_, i) => (
+        <span
+          key={i}
+          className={`w-6 h-6 rounded flex items-center justify-center text-sm font-bold ${
+            i < clamped
+              ? 'bg-blue-600 text-white'
+              : 'bg-white/10 text-white/20'
+          }`}
+        >
+          {i < clamped ? '✓' : '○'}
+        </span>
+      ))}
+      <span className="text-white/50 text-sm ml-1">{clamped} / {GAMES_WINDOW} games</span>
+    </div>
+  )
+}
+
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const numId = parseInt(id)
@@ -76,8 +110,32 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const data = await getPlayer(numId)
   if (!data) notFound()
 
-  const { player, fixtures, card_image } = data
+  const { player, fixtures, card_image, gamesPlayed } = data
   const stats = player.fantasy_fc_player_stats
+  const position = player.position
+  const defender = isDefOrGK(position)
+
+  const goals = stats?.goals ?? 0
+  const assists = stats?.assists ?? 0
+  const cleanSheets = stats?.clean_sheets ?? 0
+  const attackingActions = stats?.attacking_actions ?? 0
+  const defensiveActions = stats?.defensive_actions ?? 0
+
+  const actionsThreshold = defender ? DEF_ACTIONS_THRESHOLD : ATT_ACTIONS_THRESHOLD
+  const relevantActions = defender ? defensiveActions : attackingActions
+  const actionsLabel = defender ? '🛡️ Def. Actions' : '⚡ Att. Actions'
+  const actionsEmoji = defender ? '🛡️' : '⚡'
+
+  // Border logic
+  const achievedGA = goals + assists >= 1
+  const achievedCS = defender && cleanSheets >= 1
+  const achievedActions = relevantActions >= actionsThreshold
+  const achieved = achievedGA || achievedCS || achievedActions
+  const borderClass = achieved
+    ? 'ring-4 ring-green-500/60'
+    : (gamesPlayed >= GAMES_WINDOW && !achieved)
+    ? 'ring-4 ring-red-500/60'
+    : ''
 
   // Fake attribute estimates based on position + rating (real data not in DB)
   const baseRating = player.current_rating
@@ -120,24 +178,39 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           {/* Card + Meta — full-width on mobile, left col on desktop */}
           <div className="space-y-4 sm:space-y-6">
             {/* FC Card — full width on mobile, capped on desktop */}
-            <div className="relative mx-auto w-full max-w-[280px] sm:max-w-none aspect-[2/3] rounded-2xl overflow-hidden bg-[#1a1a1a] shadow-2xl shadow-black/50">
+            <div className={`relative mx-auto w-full max-w-[280px] sm:max-w-none aspect-[2/3] rounded-2xl overflow-hidden bg-gradient-to-b from-[#1e2a3a] to-[#111] shadow-2xl shadow-black/50 ${borderClass}`}>
               {card_image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={card_image} alt={player.name} className="w-full h-full object-contain" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gradient-to-b from-blue-900/40 to-[#111]">
                   <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
-                    <span className="text-3xl text-white/20">{player.position}</span>
+                    <span className="text-3xl text-white/40">{player.position}</span>
                   </div>
                   <span className="text-white/30">{player.name}</span>
                 </div>
               )}
-              <div className="absolute top-3 left-3 bg-black/70 text-white font-bold px-2 py-1 rounded-lg text-lg">
+              <div className="absolute top-3 left-3 bg-black/80 text-white font-bold px-2 py-1 rounded-lg text-lg shadow-lg">
                 {player.current_rating}
               </div>
               {player.base_rating !== player.current_rating && (
-                <div className="absolute top-3 right-3 bg-green-500/80 text-white font-bold px-2 py-1 rounded-lg text-sm">
+                <div className="absolute top-3 right-3 bg-green-500/80 text-white font-bold px-2 py-1 rounded-lg text-sm shadow-lg">
                   +{player.current_rating - player.base_rating}
+                </div>
+              )}
+              {/* Border legend */}
+              {achieved && (
+                <div className="absolute bottom-3 left-3 right-3 text-center">
+                  <span className="text-[11px] bg-green-500/80 text-white px-2 py-0.5 rounded-full font-semibold">
+                    ✓ Upgrade Earned
+                  </span>
+                </div>
+              )}
+              {!achieved && gamesPlayed >= GAMES_WINDOW && (
+                <div className="absolute bottom-3 left-3 right-3 text-center">
+                  <span className="text-[11px] bg-red-500/80 text-white px-2 py-0.5 rounded-full font-semibold">
+                    ✗ Window Closed
+                  </span>
                 </div>
               )}
             </div>
@@ -147,13 +220,23 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
               <h1 className="text-white font-bold text-2xl">{player.name}</h1>
               <p className="text-white/50">{player.position} · {player.club}</p>
               {player.league && <p className="text-white/30 text-sm">{player.league}</p>}
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2 pt-1 flex-wrap">
                 <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30 border">
                   Team {player.team}
                 </Badge>
                 {(player.upgrades_applied ?? 0) > 0 && (
                   <Badge className="bg-green-600/20 text-green-400 border-green-500/30 border">
                     +{player.upgrades_applied} upgrades
+                  </Badge>
+                )}
+                {achieved && (
+                  <Badge className="bg-green-600/20 text-green-400 border-green-500/30 border">
+                    🟢 Upgrade Ready
+                  </Badge>
+                )}
+                {!achieved && gamesPlayed >= GAMES_WINDOW && (
+                  <Badge className="bg-red-600/20 text-red-400 border-red-500/30 border">
+                    🔴 Window Closed
                   </Badge>
                 )}
               </div>
@@ -171,42 +254,129 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           {/* Right: Stats, Matches, Fixtures — full width mobile, 2-col on desktop */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             
+            {/* Games Progress */}
+            <div className="bg-[#1a1a1a] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-white font-semibold">Tracking Window</h2>
+                <span className="text-white/40 text-xs">4-game Fantasy FC window</span>
+              </div>
+              <GamesProgressBar gamesPlayed={gamesPlayed} />
+              {gamesPlayed > GAMES_WINDOW && (
+                <p className="text-white/30 text-xs mt-2">
+                  {gamesPlayed} total games tracked (window = last {GAMES_WINDOW})
+                </p>
+              )}
+            </div>
+
             {/* Season Stats */}
             <div className="bg-[#1a1a1a] rounded-xl p-5">
               <h2 className="text-white font-semibold mb-4">Season Stats</h2>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                  { label: 'Goals', value: stats?.goals ?? 0, emoji: '⚽' },
-                  { label: 'Assists', value: stats?.assists ?? 0, emoji: '🅰️' },
-                  { label: 'Clean Sheets', value: stats?.clean_sheets ?? 0, emoji: '🧤' },
-                  { label: 'Att. Actions', value: stats?.attacking_actions ?? 0, emoji: '⚡' },
-                ].map(s => (
-                  <div key={s.label} className="bg-white/5 rounded-lg p-3 text-center">
-                    <div className="text-2xl mb-1">{s.emoji}</div>
-                    <div className="text-white font-bold text-xl">{s.value}</div>
-                    <div className="text-white/40 text-xs">{s.label}</div>
+                {/* Games */}
+                <div className="bg-white/5 rounded-lg p-3 text-center">
+                  <div className="text-2xl mb-1">📅</div>
+                  <div className="text-white font-bold text-xl">
+                    {Math.min(gamesPlayed, GAMES_WINDOW)}
+                    <span className="text-white/30 text-base"> / {GAMES_WINDOW}</span>
                   </div>
-                ))}
+                  <div className="text-white/40 text-xs">Games</div>
+                </div>
+
+                {/* Goals */}
+                <div className="bg-white/5 rounded-lg p-3 text-center">
+                  <div className="text-2xl mb-1">⚽</div>
+                  <div className="text-white font-bold text-xl">{goals}</div>
+                  <div className="text-white/40 text-xs">Goals</div>
+                </div>
+
+                {/* Assists */}
+                <div className="bg-white/5 rounded-lg p-3 text-center">
+                  <div className="text-2xl mb-1">🅰️</div>
+                  <div className="text-white font-bold text-xl">{assists}</div>
+                  <div className="text-white/40 text-xs">Assists</div>
+                </div>
+
+                {/* Position-specific: CS for defenders/GK, else Actions */}
+                {defender ? (
+                  <div className="bg-white/5 rounded-lg p-3 text-center">
+                    <div className="text-2xl mb-1">🧤</div>
+                    <div className="text-white font-bold text-xl">{cleanSheets}</div>
+                    <div className="text-white/40 text-xs">Clean Sheets</div>
+                  </div>
+                ) : (
+                  <div className="bg-white/5 rounded-lg p-3 text-center">
+                    <div className="text-2xl mb-1">{actionsEmoji}</div>
+                    <div className="text-white font-bold text-xl">
+                      {relevantActions}
+                      <span className="text-white/30 text-base"> / {actionsThreshold}</span>
+                    </div>
+                    <div className="text-white/40 text-xs">{actionsLabel}</div>
+                  </div>
+                )}
               </div>
-              
-              {/* Upgrade Status */}
-              {stats && (stats.upgrade_goal_assist_earned || stats.upgrade_actions_earned) && (
-                <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
-                  <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Upgrade Status</h3>
-                  {stats.upgrade_goal_assist_earned && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/60">Goal/Assist Upgrade</span>
-                      <span className={`font-semibold ${stats.upgrade_goal_assist_applied ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {stats.upgrade_goal_assist_applied ? '✓ Applied' : '⏳ Earned — Pending'}
+
+              {/* Upgrade Progress Bars */}
+              {stats && (
+                <div className="mt-5 space-y-3">
+                  <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Upgrade Progress</h3>
+                  
+                  {/* G/A Upgrade */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/60">⚽ Goal / Assist Upgrade</span>
+                      <span className={`font-semibold ${achievedGA ? 'text-green-400' : 'text-white/40'}`}>
+                        {goals + assists} / 1 {achievedGA ? '✓' : ''}
                       </span>
                     </div>
-                  )}
-                  {stats.upgrade_actions_earned && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/60">Actions Upgrade</span>
-                      <span className={`font-semibold ${stats.upgrade_actions_applied ? 'text-green-400' : 'text-yellow-400'}`}>
-                        {stats.upgrade_actions_applied ? '✓ Applied' : '⏳ Earned — Pending'}
+                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${achievedGA ? 'bg-green-500' : 'bg-blue-500'}`}
+                        style={{ width: `${Math.min(((goals + assists) / 1) * 100, 100)}%` }}
+                      />
+                    </div>
+                    {stats.upgrade_goal_assist_earned && (
+                      <p className={`text-xs ${stats.upgrade_goal_assist_applied ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {stats.upgrade_goal_assist_applied ? '✓ Applied' : '⏳ Earned — Pending Application'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions Upgrade */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-white/60">{actionsLabel} Upgrade</span>
+                      <span className={`font-semibold ${achievedActions ? 'text-green-400' : 'text-white/40'}`}>
+                        {relevantActions} / {actionsThreshold} {achievedActions ? '✓' : ''}
                       </span>
+                    </div>
+                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${achievedActions ? 'bg-green-500' : 'bg-purple-500'}`}
+                        style={{ width: `${Math.min((relevantActions / actionsThreshold) * 100, 100)}%` }}
+                      />
+                    </div>
+                    {stats.upgrade_actions_earned && (
+                      <p className={`text-xs ${stats.upgrade_actions_applied ? 'text-green-400' : 'text-yellow-400'}`}>
+                        {stats.upgrade_actions_applied ? '✓ Applied' : '⏳ Earned — Pending Application'}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* CS Upgrade (DEF/GK only) */}
+                  {defender && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-white/60">🧤 Clean Sheet Upgrade</span>
+                        <span className={`font-semibold ${achievedCS ? 'text-green-400' : 'text-white/40'}`}>
+                          {cleanSheets} / 1 {achievedCS ? '✅' : ''}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${achievedCS ? 'bg-green-500' : 'bg-cyan-500'}`}
+                          style={{ width: `${Math.min((cleanSheets / 1) * 100, 100)}%` }}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

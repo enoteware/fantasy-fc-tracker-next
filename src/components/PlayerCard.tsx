@@ -3,6 +3,46 @@
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 
+// Position category helpers
+function isDefOrGK(pos: string) {
+  return ['GK', 'CB', 'LB', 'RB', 'LWB', 'RWB'].includes(pos)
+}
+function isFwdOrMid(pos: string) {
+  return ['ST', 'CF', 'LW', 'RW', 'LF', 'RF', 'CM', 'CAM', 'CDM', 'LM', 'RM'].includes(pos)
+}
+
+// Upgrade thresholds
+const ATT_ACTIONS_THRESHOLD = 6
+const DEF_ACTIONS_THRESHOLD = 12
+const GAMES_WINDOW = 4
+
+function getBorderStyle(
+  position: string,
+  gamesPlayed: number,
+  goals: number,
+  assists: number,
+  cleanSheets: number,
+  attackingActions: number,
+  defensiveActions: number,
+) {
+  const defender = isDefOrGK(position)
+  const actionsThreshold = defender ? DEF_ACTIONS_THRESHOLD : ATT_ACTIONS_THRESHOLD
+  const relevantActions = defender ? defensiveActions : attackingActions
+
+  const achievedGA = goals + assists >= 1
+  const achievedCS = defender && cleanSheets >= 1
+  const achievedActions = relevantActions >= actionsThreshold
+  const achieved = achievedGA || achievedCS || achievedActions
+
+  if (achieved) {
+    return 'ring-2 ring-green-500 ring-offset-1 ring-offset-[#0f0f0f]'
+  }
+  if (gamesPlayed >= GAMES_WINDOW && !achieved) {
+    return 'ring-2 ring-red-500 ring-offset-1 ring-offset-[#0f0f0f]'
+  }
+  return 'ring-1 ring-white/5'
+}
+
 interface Player {
   id: number
   name: string
@@ -14,10 +54,13 @@ interface Player {
   team: number | null
   upgrades_applied: number
   card_image: string | null
+  games_played: number
   stats: {
     goals: number
     assists: number
     clean_sheets: number
+    attacking_actions: number
+    defensive_actions: number
     upgrade_goal_assist_earned: boolean
     upgrade_actions_earned: boolean
     upgrade_goal_assist_applied: boolean
@@ -62,16 +105,56 @@ function ResultBadge({ result, scoreFor, scoreAgainst }: {
   )
 }
 
+function GamesProgress({ gamesPlayed }: { gamesPlayed: number }) {
+  const clamped = Math.min(gamesPlayed, GAMES_WINDOW)
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: GAMES_WINDOW }).map((_, i) => (
+        <span key={i} className={`text-[10px] ${i < clamped ? 'text-blue-400' : 'text-white/20'}`}>
+          {i < clamped ? '■' : '□'}
+        </span>
+      ))}
+      <span className="text-[10px] text-white/40 ml-1">{clamped}/{GAMES_WINDOW}</span>
+    </div>
+  )
+}
+
 export function PlayerCard({ player }: { player: Player }) {
   const upgradeCount = player.upgrades_applied ?? 0
   const hasUpgrades = upgradeCount > 0
+  const gamesPlayed = player.games_played ?? 0
+  const stats = player.stats
+  const position = player.position
+  const defender = isDefOrGK(position)
+
+  const goals = stats?.goals ?? 0
+  const assists = stats?.assists ?? 0
+  const cleanSheets = stats?.clean_sheets ?? 0
+  const attackingActions = stats?.attacking_actions ?? 0
+  const defensiveActions = stats?.defensive_actions ?? 0
+
+  const borderClass = getBorderStyle(
+    position, gamesPlayed, goals, assists, cleanSheets, attackingActions, defensiveActions
+  )
+
+  // Progress text lines for card bottom
+  const gaProgress = `${goals + assists}/1 G+A`
+  const gaAchieved = goals + assists >= 1
+
+  const actionsThreshold = defender ? DEF_ACTIONS_THRESHOLD : ATT_ACTIONS_THRESHOLD
+  const relevantActions = defender ? defensiveActions : attackingActions
+  const actionsLabel = defender ? '🛡️' : '⚡'
+  const actionsProgress = `${relevantActions}/${actionsThreshold} ${actionsLabel}`
+  const actionsAchieved = relevantActions >= actionsThreshold
+
+  const csAchieved = defender && cleanSheets >= 1
 
   return (
     <Link href={`/players/${player.id}`} className="group block">
-      <div className="relative rounded-xl overflow-hidden bg-[#1a1a1a] border border-white/5 hover:border-blue-500/30 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5">
+      <div className={`relative rounded-xl overflow-hidden bg-[#1a1a1a] hover:border-blue-500/30 transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/5 hover:-translate-y-0.5 ${borderClass}`}>
 
         {/* Card Image — min 120px wide via aspect ratio + full-width container */}
-        <div className="relative aspect-[2/3] bg-[#111] overflow-hidden">
+        <div className="relative aspect-[2/3] bg-gradient-to-b from-[#1e2a3a] to-[#111] overflow-hidden">
           {player.card_image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -80,26 +163,28 @@ export function PlayerCard({ player }: { player: Player }) {
               className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-blue-900/40 to-[#111]">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/10 flex items-center justify-center">
-                <span className="text-xl sm:text-2xl font-bold text-white/30">
+                <span className="text-xl sm:text-2xl font-bold text-white/60">
                   {player.position}
                 </span>
               </div>
-              <span className="text-white/20 text-xs">{player.name}</span>
+              <span className="text-white/40 text-xs text-center px-2">{player.name}</span>
+              {/* Fallback rating display */}
+              <div className="text-white font-bold text-2xl">{player.current_rating}</div>
             </div>
           )}
 
           {/* Rating Badge */}
           <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
-            <div className="bg-black/70 backdrop-blur-sm text-white font-bold text-sm px-1.5 py-0.5 rounded-md">
+            <div className="bg-black/80 backdrop-blur-sm text-white font-bold text-sm px-1.5 py-0.5 rounded-md shadow-lg">
               {player.current_rating}
             </div>
           </div>
 
           {/* Position Badge */}
           <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2">
-            <div className="bg-blue-600/80 backdrop-blur-sm text-white font-bold text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded">
+            <div className="bg-blue-600/90 backdrop-blur-sm text-white font-bold text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded shadow-lg">
               {player.position}
             </div>
           </div>
@@ -107,7 +192,7 @@ export function PlayerCard({ player }: { player: Player }) {
           {/* Upgrade Badge */}
           {hasUpgrades && (
             <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2">
-              <Badge className="bg-blue-500 text-white text-xs border-0 px-1.5 py-0">
+              <Badge className="bg-blue-500 text-white text-xs border-0 px-1.5 py-0 shadow-lg">
                 +{upgradeCount}
               </Badge>
             </div>
@@ -115,28 +200,39 @@ export function PlayerCard({ player }: { player: Player }) {
         </div>
 
         {/* Player Info */}
-        <div className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+        <div className="p-2 sm:p-3 space-y-1.5">
           <div>
             {/* Player name: 1 line, truncate */}
             <h3 className="text-white font-semibold text-xs sm:text-sm truncate leading-tight">{player.name}</h3>
-            {/* Club always visible; league hidden on mobile */}
+            {/* Club always visible */}
             <p className="text-white/40 text-xs truncate">{player.club}</p>
-            {player.league && (
-              <p className="hidden md:block text-white/25 text-xs truncate">{player.league}</p>
-            )}
           </div>
 
-          {/* Stats Row — bigger touch targets on mobile */}
+          {/* Games Progress */}
+          <GamesProgress gamesPlayed={gamesPlayed} />
+
+          {/* Stats Row */}
           <div className="flex items-center justify-between min-h-[20px]">
-            <div className="flex gap-2 text-xs text-white/60 font-medium">
-              {player.stats && (
+            <div className="flex gap-2 text-xs font-semibold">
+              {stats ? (
                 <>
-                  <span title="Goals" className="text-xs sm:text-[13px]">⚽{player.stats.goals}</span>
-                  <span title="Assists" className="text-xs sm:text-[13px]">🅰️{player.stats.assists}</span>
-                  {player.position === 'GK' && (
-                    <span title="Clean Sheets" className="text-xs sm:text-[13px]">🧤{player.stats.clean_sheets}</span>
+                  <span title="Goals" className="text-white">
+                    <span className="text-white/50">G</span>
+                    <span className="text-white ml-0.5">{goals}</span>
+                  </span>
+                  <span title="Assists" className="text-white">
+                    <span className="text-white/50">A</span>
+                    <span className="text-white ml-0.5">{assists}</span>
+                  </span>
+                  {defender && (
+                    <span title="Clean Sheets" className="text-white">
+                      <span className="text-white/50">CS</span>
+                      <span className="text-white ml-0.5">{cleanSheets}</span>
+                    </span>
                   )}
                 </>
+              ) : (
+                <span className="text-white/20 text-xs">No data</span>
               )}
             </div>
             {player.last_match && (
@@ -148,25 +244,59 @@ export function PlayerCard({ player }: { player: Player }) {
             )}
           </div>
 
-          {/* Upgrade Indicators */}
-          {player.stats && (player.stats.upgrade_goal_assist_earned || player.stats.upgrade_actions_earned) && (
-            <div className="flex gap-1 flex-wrap">
-              {player.stats.upgrade_goal_assist_earned && (
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${
-                  player.stats.upgrade_goal_assist_applied
-                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+          {/* Upgrade Progress Row */}
+          {stats && (
+            <div className="flex flex-wrap gap-1 pt-0.5 border-t border-white/5">
+              {/* G+A progress */}
+              <span className={`text-[10px] px-1 py-0.5 rounded font-medium ${
+                gaAchieved
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-white/5 text-white/30'
+              }`}>
+                {gaProgress}
+              </span>
+
+              {/* Actions progress */}
+              <span className={`text-[10px] px-1 py-0.5 rounded font-medium ${
+                actionsAchieved
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-white/5 text-white/30'
+              }`}>
+                {actionsProgress}
+              </span>
+
+              {/* CS badge for DEF/GK only */}
+              {defender && (
+                <span className={`text-[10px] px-1 py-0.5 rounded font-medium ${
+                  csAchieved
+                    ? 'bg-green-500/20 text-green-400'
+                    : 'bg-white/5 text-white/30'
                 }`}>
-                  {player.stats.upgrade_goal_assist_applied ? '✓' : '⏳'} G/A
+                  {cleanSheets}/1 CS {csAchieved ? '✅' : ''}
                 </span>
               )}
-              {player.stats.upgrade_actions_earned && (
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${
-                  player.stats.upgrade_actions_applied
+            </div>
+          )}
+
+          {/* +1 OVR badge if any upgrade earned */}
+          {stats && (gaAchieved || actionsAchieved || csAchieved) && (
+            <div className="flex gap-1 flex-wrap">
+              {gaAchieved && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${
+                  stats.upgrade_goal_assist_applied
                     ? 'bg-green-500/20 text-green-400 border-green-500/30'
                     : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
                 }`}>
-                  {player.stats.upgrade_actions_applied ? '✓' : '⏳'} ACT
+                  {stats.upgrade_goal_assist_applied ? '✓ G/A' : '⏳ G/A'}
+                </span>
+              )}
+              {actionsAchieved && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${
+                  stats.upgrade_actions_applied
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+                }`}>
+                  {stats.upgrade_actions_applied ? '✓ ACT' : '⏳ ACT'}
                 </span>
               )}
             </div>

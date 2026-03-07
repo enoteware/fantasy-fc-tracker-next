@@ -33,6 +33,18 @@ async function getPlayers() {
     }
   }
 
+  // Get games_played per player from player_matches
+  const playerIds = players.map(p => p.id)
+  const matchCounts = await prisma.fantasy_fc_player_matches.groupBy({
+    by: ['player_id'],
+    where: { player_id: { in: playerIds } },
+    _count: { id: true },
+  })
+  const gamesPlayedMap: Record<number, number> = {}
+  for (const row of matchCounts) {
+    gamesPlayedMap[row.player_id] = row._count.id
+  }
+
   return players.map(player => ({
     id: player.id,
     name: player.name,
@@ -44,6 +56,7 @@ async function getPlayers() {
     team: player.team,
     upgrades_applied: player.upgrades_applied ?? 0,
     card_image: getCardImage(player.name),
+    games_played: gamesPlayedMap[player.id] ?? 0,
     stats: player.fantasy_fc_player_stats ? {
       goals: player.fantasy_fc_player_stats.goals ?? 0,
       assists: player.fantasy_fc_player_stats.assists ?? 0,
