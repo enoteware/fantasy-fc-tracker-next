@@ -1,0 +1,467 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model KnowledgeChunk {
+  id                String                 @id
+  documentId        String
+  chunkIndex        Int
+  content           String
+  tokenEstimate     Int?
+  embedding         Unsupported("vector")?
+  createdAt         DateTime               @default(now())
+  KnowledgeDocument KnowledgeDocument      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+}
+
+model KnowledgeDocument {
+  id              String                @id
+  title           String
+  sourceType      KnowledgeDocumentType
+  url             String?
+  author          String?
+  gameVersion     String?
+  publishedAt     DateTime?
+  rawText         String
+  contentHash     String                @unique
+  metadata        Json?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime
+  sourceId        String?
+  KnowledgeChunk  KnowledgeChunk[]
+  KnowledgeSource KnowledgeSource?      @relation(fields: [sourceId], references: [id])
+
+  @@index([publishedAt])
+  @@index([sourceId])
+  @@index([sourceType])
+}
+
+model KnowledgeSource {
+  id                String              @id
+  externalKey       String              @unique
+  name              String
+  sourceType        String?
+  baseUrl           String?
+  trustScore        Float?              @default(0.5)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  KnowledgeDocument KnowledgeDocument[]
+
+  @@index([name])
+}
+
+model MatchLog {
+  id               String                 @id
+  playedAt         DateTime
+  matchType        MatchType
+  difficulty       DifficultyRequirement?
+  result           MatchResult
+  goalsFor         Int?
+  goalsAgainst     Int?
+  assists          Int?
+  estimatedMinutes Int
+  userId           String
+  User             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([playedAt])
+  @@index([userId])
+}
+
+model Objective {
+  id                    String                  @id
+  title                 String
+  description           String
+  expiresAt             DateTime?
+  source                ObjectiveSource
+  sourceUrl             String?
+  rewardValueNormalized Float?
+  estimatedMinutesTotal Float?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  groupId               String
+  ObjectiveGroup        ObjectiveGroup          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  ObjectiveRule         ObjectiveRule[]
+  Reward                Reward[]
+  UserObjectiveProgress UserObjectiveProgress[]
+
+  @@index([expiresAt])
+  @@index([groupId])
+  @@index([source])
+}
+
+model ObjectiveGroup {
+  id            String      @id
+  name          String
+  category      String
+  expiresAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+  futGgId       String?     @unique
+  sourceUrl     String?
+  isNew         Boolean     @default(false)
+  totalSp       Int?
+  earnedSp      Int?
+  tasksRequired Int?
+  Objective     Objective[]
+  Reward        Reward[]
+
+  @@index([category])
+  @@index([expiresAt])
+  @@index([futGgId])
+}
+
+model ObjectiveRule {
+  id                      String                  @id
+  description             String
+  matchType               MatchType?
+  difficultyRequirement   DifficultyRequirement?
+  resultRequired          ResultType?
+  countRequired           Int?
+  estimatedEventsPerMatch Float?
+  parserConfidence        Float?
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime
+  objectiveId             String
+  matchTypes              String[]                @default([])
+  filters                 Json?
+  Objective               Objective               @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  PlayerRequirement       PlayerRequirement[]
+  ProgressChangeLog       ProgressChangeLog[]
+  SquadRequirement        SquadRequirement[]
+  UserObjectiveProgress   UserObjectiveProgress[]
+
+  @@index([matchType])
+  @@index([objectiveId])
+}
+
+model PlayerRequirement {
+  id            String                @id
+  type          PlayerRequirementType
+  nationality   String?
+  league        String?
+  club          String?
+  position      String?
+  minOverall    Int?
+  maxOverall    Int?
+  rarity        String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime
+  ruleId        String
+  ObjectiveRule ObjectiveRule         @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+}
+
+model ProgressChangeLog {
+  id            String        @id
+  userId        String
+  ruleId        String
+  previousCount Int
+  newCount      Int
+  delta         Int
+  createdAt     DateTime      @default(now())
+  ObjectiveRule ObjectiveRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  User          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([ruleId])
+  @@index([userId])
+}
+
+model Reward {
+  id             String          @id
+  type           RewardType
+  description    String
+  value          String?
+  tradeable      Boolean         @default(false)
+  utilityScore   Float?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  objectiveId    String?
+  groupId        String?
+  amount         Int?
+  metadata       Json?
+  subtype        String?
+  ObjectiveGroup ObjectiveGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  Objective      Objective?      @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([objectiveId])
+}
+
+model SquadRequirement {
+  id            String               @id
+  type          SquadRequirementType
+  nationality   String?
+  league        String?
+  club          String?
+  rarity        String?
+  minCount      Int?
+  maxOverall    Int?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime
+  ruleId        String
+  ObjectiveRule ObjectiveRule        @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+}
+
+model User {
+  id                    String                  @id
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  MatchLog              MatchLog[]
+  ProgressChangeLog     ProgressChangeLog[]
+  UserObjectiveProgress UserObjectiveProgress[]
+  UserPlanningProfile   UserPlanningProfile?
+}
+
+model UserObjectiveProgress {
+  userId         String
+  objectiveId    String
+  ruleId         String
+  countCompleted Int           @default(0)
+  isComplete     Boolean       @default(false)
+  lastUpdated    DateTime
+  notes          String?
+  Objective      Objective     @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  ObjectiveRule  ObjectiveRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  User           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, ruleId])
+  @@index([objectiveId])
+  @@index([ruleId])
+  @@index([userId])
+}
+
+model UserPlanningProfile {
+  id                       String   @id
+  preferredMatchTypes      String[]
+  avoidMatchTypes          String[]
+  defaultSessionMinutes    Int      @default(60)
+  avgMinutesPerMatchByMode Json?
+  winRateByMode            Json?
+  rewardPreferenceWeights  Json?
+  userId                   String   @unique
+  User                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model fantasy_fc_club_stats {
+  id                      Int       @id @default(autoincrement())
+  club                    String    @db.VarChar(255)
+  league                  String    @db.VarChar(100)
+  tracking_start          DateTime  @default(dbgenerated("'2026-02-21'::date")) @db.Date
+  matches_played          Int?      @default(0)
+  matches_tracked         Int?      @default(4)
+  wins                    Int?      @default(0)
+  draws                   Int?      @default(0)
+  losses                  Int?      @default(0)
+  total_points            Int?      @default(dbgenerated("((wins * 3) + draws)"))
+  goals_scored            Int?      @default(0)
+  goals_conceded          Int?      @default(0)
+  clean_sheets            Int?      @default(0)
+  upgrade_6pts_earned     Boolean?  @default(false)
+  upgrade_10goals_earned  Boolean?  @default(false)
+  created_at              DateTime? @default(now()) @db.Timestamp(6)
+  updated_at              DateTime? @default(now()) @db.Timestamp(6)
+  upgrade_6pts_applied    Boolean?  @default(false)
+  upgrade_10goals_applied Boolean?  @default(false)
+
+  @@unique([club, tracking_start])
+  @@index([club], map: "idx_club_stats_club")
+}
+
+model fantasy_fc_matches {
+  id                        Int                         @id @default(autoincrement())
+  club                      String                      @db.VarChar(255)
+  opponent                  String                      @db.VarChar(255)
+  match_date                DateTime                    @db.Date
+  home_away                 String                      @db.VarChar(10)
+  league                    String                      @db.VarChar(100)
+  result                    String?                     @db.VarChar(10)
+  score_for                 Int?
+  score_against             Int?
+  goals_scored              Int?                        @default(0)
+  clean_sheet               Boolean?                    @default(false)
+  tracked                   Boolean?                    @default(false)
+  processed                 Boolean?                    @default(false)
+  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  sofascore_id              String?                     @db.VarChar(50)
+  fantasy_fc_player_matches fantasy_fc_player_matches[]
+
+  @@unique([club, match_date, opponent])
+  @@index([club], map: "idx_matches_club")
+  @@index([match_date], map: "idx_matches_date")
+  @@index([sofascore_id], map: "idx_matches_sofascore_id")
+}
+
+model fantasy_fc_player_matches {
+  id                 Int                 @id @default(autoincrement())
+  player_id          Int?
+  match_id           Int?
+  goals              Int?                @default(0)
+  assists            Int?                @default(0)
+  clean_sheet        Boolean?            @default(false)
+  attacking_actions  Int?                @default(0)
+  defensive_actions  Int?                @default(0)
+  created_at         DateTime?           @default(now()) @db.Timestamp(6)
+  fantasy_fc_matches fantasy_fc_matches? @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  fantasy_fc_players fantasy_fc_players? @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([player_id, match_id])
+}
+
+model fantasy_fc_player_stats {
+  id                          Int                 @id @default(autoincrement())
+  player_id                   Int?                @unique
+  goals                       Int?                @default(0)
+  assists                     Int?                @default(0)
+  clean_sheets                Int?                @default(0)
+  attacking_actions           Int?                @default(0)
+  defensive_actions           Int?                @default(0)
+  upgrade_goal_assist_earned  Boolean?            @default(false)
+  upgrade_actions_earned      Boolean?            @default(false)
+  created_at                  DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at                  DateTime?           @default(now()) @db.Timestamp(6)
+  upgrade_goal_assist_applied Boolean?            @default(false)
+  upgrade_actions_applied     Boolean?            @default(false)
+  fantasy_fc_players          fantasy_fc_players? @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model fantasy_fc_players {
+  id                        Int                         @id @default(autoincrement())
+  name                      String                      @db.VarChar(255)
+  club                      String                      @db.VarChar(255)
+  position                  String                      @db.VarChar(10)
+  base_rating               Int
+  current_rating            Int
+  is_hero                   Boolean?                    @default(false)
+  card_type                 String?                     @default("standard") @db.VarChar(50)
+  release_date              DateTime?                   @default(dbgenerated("'2026-02-21'::date")) @db.Date
+  end_date                  DateTime?                   @db.Date
+  created_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  updated_at                DateTime?                   @default(now()) @db.Timestamp(6)
+  upgrades_applied          Int?                        @default(0)
+  league                    String?                     @db.VarChar(100)
+  futbin_url                String?
+  team                      Int?                        @default(1)
+  fantasy_fc_player_matches fantasy_fc_player_matches[]
+  fantasy_fc_player_stats   fantasy_fc_player_stats?
+  fantasy_fc_upgrades       fantasy_fc_upgrades[]
+
+  @@unique([name, club])
+  @@index([club], map: "idx_players_club")
+  @@index([current_rating], map: "idx_players_rating")
+}
+
+model fantasy_fc_upcoming_fixtures {
+  id          Int       @id @default(autoincrement())
+  club        String    @db.VarChar(100)
+  opponent    String    @db.VarChar(100)
+  match_date  DateTime  @db.Date
+  competition String?   @db.VarChar(100)
+  home_away   String?   @db.VarChar(10)
+  league      String?   @db.VarChar(100)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([club], map: "idx_upcoming_club")
+  @@index([match_date], map: "idx_upcoming_date")
+}
+
+model fantasy_fc_upgrades {
+  id                 Int                 @id @default(autoincrement())
+  player_id          Int?
+  upgrade_type       String              @db.VarChar(50)
+  tier               Int?
+  ovr_boost          Int?                @default(0)
+  stat_boost         String?             @db.VarChar(100)
+  playstyle_boost    String?             @db.VarChar(100)
+  earned_date        DateTime            @db.Date
+  applied            Boolean?            @default(false)
+  created_at         DateTime?           @default(now()) @db.Timestamp(6)
+  fantasy_fc_players fantasy_fc_players? @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([player_id, upgrade_type, tier])
+  @@index([player_id], map: "idx_upgrades_player")
+}
+
+enum DifficultyRequirement {
+  Any
+  SemiProPlus
+  ProfessionalPlus
+  WorldClassPlus
+  LegendaryPlus
+}
+
+enum KnowledgeDocumentType {
+  youtube_transcript
+  article
+  guide
+  reddit
+  note
+  other
+}
+
+enum MatchResult {
+  win
+  draw
+  loss
+}
+
+enum MatchType {
+  SquadBattles
+  Rivals
+  Champions
+  Friendlies
+  AnyOnline
+  Any
+  Rush
+  LiveEvents
+}
+
+enum ObjectiveSource {
+  scraped
+  manual
+}
+
+enum PlayerRequirementType {
+  scorer
+  assister
+  any
+}
+
+enum ResultType {
+  win
+  play
+  draw_or_win
+  score_goals
+  assist
+  clean_sheet
+}
+
+enum RewardType {
+  player
+  pack
+  coins
+  xp
+  token
+  other
+  evolution
+  cosmetic
+}
+
+enum SquadRequirementType {
+  min_players
+  full_squad
+  max_overall
+  min_chemistry
+}
