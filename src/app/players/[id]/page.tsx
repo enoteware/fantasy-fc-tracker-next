@@ -2,10 +2,12 @@
 import { prisma } from '@/lib/db'
 import { getCardImage } from '@/lib/cards'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { UpgradeProgressCard } from '@/components/UpgradeProgressCard'
+import { PlayerDebugPanel } from '@/components/PlayerDebugPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -78,6 +80,10 @@ function findDateWhenThresholdCrossed(
 }
 
 async function getPlayer(id: number) {
+  const requestHeaders = await headers()
+  const host = requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host') ?? ''
+  const isLocalhost = host.startsWith('localhost') || host.startsWith('127.') || host.startsWith('10.') || host.startsWith('192.168.')
+
   const player = await prisma.fantasy_fc_players.findUnique({
     where: { id },
     include: {
@@ -154,6 +160,7 @@ async function getPlayer(id: number) {
     card_image: getCardImage(player.name),
     gamesPlayed: gamesPlayedCount,
     allLeagueMatchesSorted,
+    isLocalhost,
   }
 }
 
@@ -222,7 +229,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const data = await getPlayer(numId)
   if (!data) notFound()
 
-  const { player, fixtures, leagueMatches, card_image, gamesPlayed, allLeagueMatchesSorted } = data
+  const { player, fixtures, leagueMatches, card_image, gamesPlayed, allLeagueMatchesSorted, isLocalhost } = data
   const stats = player.fantasy_fc_player_stats
   const position = player.position
   const defender = isDefOrGK(position)
@@ -694,6 +701,33 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                 <p className="text-white/30 text-sm">No fixtures data yet</p>
               )}
             </div>
+
+            {isLocalhost && (
+              <PlayerDebugPanel
+                playerId={player.id}
+                playerName={player.name}
+                initialStats={{
+                  wins,
+                  teamGoals,
+                  ga,
+                  cs: cleanSheets,
+                  attackingActions,
+                  defensiveActions,
+                }}
+                upgrades={player.fantasy_fc_upgrades.map(u => ({
+                  upgrade_type: u.upgrade_type,
+                  earned_date: String(u.earned_date),
+                  applied: u.applied ?? false,
+                }))}
+                rawMatchData={leagueMatches.map(pm => ({
+                  date: String(pm.fantasy_fc_matches?.match_date),
+                  opponent: pm.fantasy_fc_matches?.opponent ?? '',
+                  result: pm.fantasy_fc_matches?.result ?? '',
+                  goals: pm.goals ?? 0,
+                  assists: pm.assists ?? 0,
+                }))}
+              />
+            )}
           </div>
         </div>
       </main>
