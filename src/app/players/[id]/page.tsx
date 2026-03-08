@@ -705,27 +705,49 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
             {isLocalhost && (
               <PlayerDebugPanel
                 playerId={player.id}
-                playerName={player.name}
-                initialStats={{
-                  wins,
-                  teamGoals,
-                  ga,
-                  cs: cleanSheets,
-                  attackingActions,
-                  defensiveActions,
+                player={{
+                  id: player.id,
+                  name: player.name,
+                  club: player.club ?? '',
+                  position: player.position ?? '',
+                  base_rating: player.base_rating ?? 0,
+                  current_rating: player.current_rating ?? 0,
+                  is_hero: player.is_hero ?? false,
+                  card_type: player.card_type ?? '',
+                  release_date: String(player.release_date ?? ''),
+                  team: player.team ?? 0,
+                  league: player.league ?? '',
+                  ea_id: (player as any).ea_id ?? null,
+                  futgg_slug: (player as any).futgg_slug ?? null,
+                  fifauteam_slug: (player as any).fifauteam_slug ?? null,
+                  futbin_url: (player as any).futbin_url ?? null,
+                  card_color_primary: (player as any).card_color_primary ?? null,
+                  card_color_secondary: (player as any).card_color_secondary ?? null,
+                  card_color_accent: (player as any).card_color_accent ?? null,
                 }}
+                stats={{ wins, teamGoals, ga, cs: cleanSheets, attackingActions, defensiveActions }}
                 upgrades={player.fantasy_fc_upgrades.map(u => ({
-                  upgrade_type: u.upgrade_type,
-                  earned_date: String(u.earned_date),
+                  upgrade_type: u.upgrade_type ?? '',
+                  earned_date: String(u.earned_date ?? ''),
                   applied: u.applied ?? false,
                 }))}
-                rawMatchData={leagueMatches.map(pm => ({
-                  date: String(pm.fantasy_fc_matches?.match_date),
+                matches={leagueMatches.map(pm => ({
+                  match_id: pm.match_id ?? 0,
+                  date: String(pm.fantasy_fc_matches?.match_date ?? ''),
+                  club: pm.fantasy_fc_matches?.club ?? '',
                   opponent: pm.fantasy_fc_matches?.opponent ?? '',
+                  home_away: pm.fantasy_fc_matches?.home_away ?? '',
+                  league: pm.fantasy_fc_matches?.league ?? '',
                   result: pm.fantasy_fc_matches?.result ?? '',
+                  score_for: pm.fantasy_fc_matches?.score_for ?? null,
+                  score_against: pm.fantasy_fc_matches?.score_against ?? null,
                   goals: pm.goals ?? 0,
                   assists: pm.assists ?? 0,
+                  clean_sheet: pm.clean_sheet ?? false,
+                  attacking_actions: pm.attacking_actions ?? 0,
+                  defensive_actions: pm.defensive_actions ?? 0,
                 }))}
+                hasCardImage={!!card_image}
               />
             )}
           </div>
