@@ -401,6 +401,48 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
 
+            {/* External Links */}
+            {(() => {
+              const slug = (player as any).futgg_slug as string | null
+              const fifauteamSlug = (player as any).fifauteam_slug as string | null
+              const futbinUrl = (player as any).futbin_url as string | null
+              const nameParts = player.name.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, '-')
+              const futggUrl = slug ? `https://www.fut.gg/players/26-fantasy-fc-${slug}/` : `https://www.fut.gg/players/?page=1&rarity_id=%5B135%2C111%5D&search=${encodeURIComponent(player.name)}`
+              const futbinLink = futbinUrl || `https://www.futbin.com/search?term=${encodeURIComponent(player.name)}`
+              const fifauteamLink = `https://fifauteam.com/fc-26-fantasy-tracker/`
+              return (
+                <div className="bg-[#1a1a1a] rounded-xl p-4">
+                  <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">Compare Data</h2>
+                  <div className="flex flex-col gap-2">
+                    <a href={futggUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">⚽</span>
+                        <span className="text-white/80 text-sm font-medium">FUT.GG</span>
+                      </div>
+                      <span className="text-white/30 text-xs group-hover:text-white/60">Player page →</span>
+                    </a>
+                    <a href={futbinLink} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">📊</span>
+                        <span className="text-white/80 text-sm font-medium">FUTBIN</span>
+                      </div>
+                      <span className="text-white/30 text-xs group-hover:text-white/60">Player page →</span>
+                    </a>
+                    <a href={fifauteamLink} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors group">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">📈</span>
+                        <span className="text-white/80 text-sm font-medium">fifauteam Tracker</span>
+                      </div>
+                      <span className="text-white/30 text-xs group-hover:text-white/60">Live upgrades →</span>
+                    </a>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Attributes */}
             <div className="bg-[#1a1a1a] rounded-xl p-4 space-y-3">
               <h2 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Attributes</h2>

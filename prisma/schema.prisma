@@ -390,6 +390,9 @@ model fantasy_fc_players {
   card_color_secondary      String?                     @db.VarChar(7)
   card_color_accent         String?                     @db.VarChar(7)
   sofascore_id              Int?
+  ea_id                     Int?
+  futgg_slug                String?
+  fifauteam_slug            String?
   fantasy_fc_player_matches fantasy_fc_player_matches[]
   fantasy_fc_player_stats   fantasy_fc_player_stats?
   fantasy_fc_upgrades       fantasy_fc_upgrades[]
