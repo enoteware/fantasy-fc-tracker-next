@@ -295,6 +295,9 @@ export function PlayerDebugPanel({ playerId, player, stats, upgrades, matches, h
         </div>
       ))}
 
+      {/* ── Schema ── */}
+      <SchemaSection />
+
       {/* ── Matches ── */}
       <SectionHead title="League Matches" />
       {matches.length === 0 && <div className="text-white/25 text-xs py-2">No league match rows in DB.</div>}
@@ -316,6 +319,152 @@ export function PlayerDebugPanel({ playerId, player, stats, upgrades, matches, h
       </div>
 
     </section>
+  )
+}
+
+// ─── Schema section ───────────────────────────────────────────────────────────
+
+const SCHEMA: Record<string, Array<{ col: string; type: string; nullable: boolean; note?: string }>> = {
+  "fantasy_fc_players": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "name", type: "varchar(255)", nullable: false },
+    { col: "club", type: "varchar(255)", nullable: false },
+    { col: "position", type: "varchar(10)", nullable: false },
+    { col: "base_rating", type: "integer", nullable: false },
+    { col: "current_rating", type: "integer", nullable: false },
+    { col: "is_hero", type: "boolean", nullable: true, note: "default false" },
+    { col: "card_type", type: "varchar(50)", nullable: true, note: "default 'standard'" },
+    { col: "release_date", type: "date", nullable: true },
+    { col: "end_date", type: "date", nullable: true },
+    { col: "league", type: "varchar(100)", nullable: true },
+    { col: "team", type: "integer", nullable: true, note: "1=T1 2=T2 0=SBC/OBJ" },
+    { col: "ea_id", type: "integer", nullable: true },
+    { col: "futgg_slug", type: "text", nullable: true },
+    { col: "fifauteam_slug", type: "text", nullable: true },
+    { col: "futbin_url", type: "text", nullable: true },
+    { col: "card_color_primary", type: "varchar(7)", nullable: true },
+    { col: "card_color_secondary", type: "varchar(7)", nullable: true },
+    { col: "card_color_accent", type: "varchar(7)", nullable: true },
+    { col: "sofascore_id", type: "integer", nullable: true },
+    { col: "upgrades_applied", type: "integer", nullable: true, note: "default 0" },
+    { col: "created_at / updated_at", type: "timestamp", nullable: true },
+  ],
+  "fantasy_fc_player_stats": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "player_id", type: "integer", nullable: true, note: "FK → players.id UNIQUE" },
+    { col: "goals", type: "integer", nullable: true, note: "default 0 (legacy)" },
+    { col: "assists", type: "integer", nullable: true, note: "default 0 (legacy)" },
+    { col: "clean_sheets", type: "integer", nullable: true, note: "default 0 (legacy)" },
+    { col: "attacking_actions", type: "integer", nullable: true, note: "default 0" },
+    { col: "defensive_actions", type: "integer", nullable: true, note: "default 0" },
+    { col: "wins", type: "integer", nullable: true, note: "fifauteam team wins → /6" },
+    { col: "team_goals", type: "integer", nullable: true, note: "fifauteam team goals → /10" },
+    { col: "ga", type: "integer", nullable: true, note: "G/A combined → /1" },
+    { col: "cs", type: "integer", nullable: true, note: "clean sheets → /1" },
+    { col: "upgrade_goal_assist_earned/applied", type: "boolean", nullable: true, note: "legacy" },
+    { col: "upgrade_actions_earned/applied", type: "boolean", nullable: true, note: "legacy" },
+    { col: "created_at / updated_at", type: "timestamp", nullable: true },
+  ],
+  "fantasy_fc_upgrades": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "player_id", type: "integer", nullable: true, note: "FK → players.id" },
+    { col: "upgrade_type", type: "varchar(50)", nullable: false, note: "1G 1A AC DC BC CS 6P TG" },
+    { col: "tier", type: "integer", nullable: true },
+    { col: "earned_date", type: "date", nullable: false },
+    { col: "applied", type: "boolean", nullable: true, note: "default false (EA in-game push)" },
+    { col: "ovr_boost", type: "integer", nullable: true },
+    { col: "stat_boost / playstyle_boost", type: "varchar(100)", nullable: true },
+    { col: "created_at", type: "timestamp", nullable: true },
+    { col: "UNIQUE", type: "(player_id, upgrade_type, tier)", nullable: false },
+  ],
+  "fantasy_fc_matches": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "club", type: "varchar(255)", nullable: false },
+    { col: "opponent", type: "varchar(255)", nullable: false },
+    { col: "match_date", type: "date", nullable: false },
+    { col: "home_away", type: "varchar(10)", nullable: false },
+    { col: "league", type: "varchar(100)", nullable: false },
+    { col: "result", type: "varchar(10)", nullable: true, note: "W/D/L" },
+    { col: "score_for / score_against", type: "integer", nullable: true },
+    { col: "goals_scored", type: "integer", nullable: true, note: "default 0" },
+    { col: "clean_sheet", type: "boolean", nullable: true },
+    { col: "tracked / processed", type: "boolean", nullable: true },
+    { col: "sofascore_id", type: "varchar(50)", nullable: true },
+    { col: "created_at / updated_at", type: "timestamp", nullable: true },
+  ],
+  "fantasy_fc_player_matches": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "player_id", type: "integer", nullable: true, note: "FK → players.id" },
+    { col: "match_id", type: "integer", nullable: true, note: "FK → matches.id" },
+    { col: "goals / assists", type: "integer", nullable: true, note: "default 0" },
+    { col: "clean_sheet", type: "boolean", nullable: true },
+    { col: "attacking_actions / defensive_actions", type: "integer", nullable: true },
+    { col: "minutes_played", type: "integer", nullable: true },
+    { col: "sofascore_rating", type: "numeric", nullable: true },
+    { col: "sofascore_event_id", type: "integer", nullable: true },
+    { col: "yellow_card / red_card", type: "boolean", nullable: true },
+    { col: "shots / shots_on_target", type: "integer", nullable: true },
+    { col: "key_passes / successful_dribbles", type: "integer", nullable: true },
+    { col: "touches_in_box", type: "integer", nullable: true },
+    { col: "tackles_won / interceptions / clearances / blocks", type: "integer", nullable: true },
+    { col: "saves / goals_conceded", type: "integer", nullable: true },
+    { col: "created_at", type: "timestamp", nullable: true },
+  ],
+  "fantasy_fc_upcoming_fixtures": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "club", type: "varchar(100)", nullable: false },
+    { col: "opponent", type: "varchar(100)", nullable: false },
+    { col: "match_date", type: "date", nullable: false },
+    { col: "competition", type: "varchar(100)", nullable: true },
+    { col: "home_away", type: "varchar(10)", nullable: true },
+    { col: "league", type: "varchar(100)", nullable: true },
+    { col: "created_at / updated_at", type: "timestamp", nullable: true },
+  ],
+  "player_data_comments": [
+    { col: "id", type: "integer", nullable: false },
+    { col: "player_id", type: "integer", nullable: false, note: "FK → players.id" },
+    { col: "field", type: "text", nullable: false, note: "e.g. 'is_hero', 'stat:wins', 'match:42'" },
+    { col: "comment", type: "text", nullable: false },
+    { col: "flagged", type: "boolean", nullable: true, note: "default true" },
+    { col: "resolved", type: "boolean", nullable: true, note: "default false" },
+    { col: "created_at / updated_at", type: "timestamptz", nullable: true },
+  ],
+}
+
+function SchemaSection() {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-t border-white/10 mt-4 pt-4">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 text-white/30 hover:text-white/60 text-xs font-mono uppercase tracking-widest transition-colors"
+      >
+        <span>{open ? "▼" : "▶"}</span>
+        <span>DB Schema</span>
+        <span className="text-white/15 normal-case tracking-normal">(7 tables)</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-4">
+          {Object.entries(SCHEMA).map(([table, cols]) => (
+            <div key={table}>
+              <div className="text-blue-400/70 text-xs font-mono font-semibold mb-1">{table}</div>
+              <div className="bg-black/30 rounded-lg overflow-hidden">
+                {cols.map((c, i) => (
+                  <div key={i} className={`flex items-baseline gap-2 px-3 py-1 text-xs font-mono ${i % 2 === 0 ? "" : "bg-white/[0.02]"}`}>
+                    <span className="text-white/70 w-64 shrink-0">{c.col}</span>
+                    <span className="text-emerald-400/70 w-36 shrink-0">{c.type}</span>
+                    <span className={`shrink-0 ${c.nullable ? "text-white/20" : "text-amber-400/60"}`}>
+                      {c.nullable ? "null" : "NOT NULL"}
+                    </span>
+                    {c.note && <span className="text-white/25 truncate">{c.note}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
