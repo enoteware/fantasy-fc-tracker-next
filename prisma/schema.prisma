@@ -278,6 +278,23 @@ model fantasy_fc_club_stats {
   @@index([club], map: "idx_club_stats_club")
 }
 
+model fantasy_fc_debug_reports {
+  id             Int       @id @default(autoincrement())
+  entity_type    String    @default("player") @db.VarChar(50)
+  entity_key     String    @db.VarChar(255)
+  field_path     String    @db.VarChar(255)
+  rendered_value String?
+  schema_group   String    @db.VarChar(50)
+  comment        String?
+  status         String    @default("open") @db.VarChar(20)
+  page_context   Json?
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+
+  @@index([entity_type, entity_key], map: "idx_debug_reports_entity")
+  @@index([status], map: "idx_debug_reports_status")
+}
+
 model fantasy_fc_matches {
   id                        Int                         @id @default(autoincrement())
   club                      String                      @db.VarChar(255)
@@ -304,17 +321,33 @@ model fantasy_fc_matches {
 }
 
 model fantasy_fc_player_matches {
-  id                 Int                 @id @default(autoincrement())
-  player_id          Int?
-  match_id           Int?
-  goals              Int?                @default(0)
-  assists            Int?                @default(0)
-  clean_sheet        Boolean?            @default(false)
-  attacking_actions  Int?                @default(0)
-  defensive_actions  Int?                @default(0)
-  created_at         DateTime?           @default(now()) @db.Timestamp(6)
-  fantasy_fc_matches fantasy_fc_matches? @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  fantasy_fc_players fantasy_fc_players? @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                  Int                 @id @default(autoincrement())
+  player_id           Int?
+  match_id            Int?
+  goals               Int?                @default(0)
+  assists             Int?                @default(0)
+  clean_sheet         Boolean?            @default(false)
+  attacking_actions   Int?                @default(0)
+  defensive_actions   Int?                @default(0)
+  created_at          DateTime?           @default(now()) @db.Timestamp(6)
+  minutes_played      Int?                @default(0)
+  sofascore_rating    Decimal?            @db.Decimal(4, 2)
+  yellow_card         Boolean?            @default(false)
+  red_card            Boolean?            @default(false)
+  sofascore_event_id  Int?
+  shots               Int?                @default(0)
+  shots_on_target     Int?                @default(0)
+  key_passes          Int?                @default(0)
+  successful_dribbles Int?                @default(0)
+  touches_in_box      Int?                @default(0)
+  tackles_won         Int?                @default(0)
+  interceptions       Int?                @default(0)
+  clearances          Int?                @default(0)
+  blocks              Int?                @default(0)
+  saves               Int?                @default(0)
+  goals_conceded      Int?                @default(0)
+  fantasy_fc_matches  fantasy_fc_matches? @relation(fields: [match_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  fantasy_fc_players  fantasy_fc_players? @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([player_id, match_id])
 }
@@ -356,6 +389,7 @@ model fantasy_fc_players {
   card_color_primary        String?                     @db.VarChar(7)
   card_color_secondary      String?                     @db.VarChar(7)
   card_color_accent         String?                     @db.VarChar(7)
+  sofascore_id              Int?
   fantasy_fc_player_matches fantasy_fc_player_matches[]
   fantasy_fc_player_stats   fantasy_fc_player_stats?
   fantasy_fc_upgrades       fantasy_fc_upgrades[]
@@ -363,6 +397,7 @@ model fantasy_fc_players {
   @@unique([name, club])
   @@index([club], map: "idx_players_club")
   @@index([current_rating], map: "idx_players_rating")
+  @@index([sofascore_id], map: "idx_players_sofascore_id")
 }
 
 model fantasy_fc_upcoming_fixtures {
