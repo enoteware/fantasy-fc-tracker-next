@@ -366,6 +366,10 @@ model fantasy_fc_player_stats {
   updated_at                  DateTime?           @default(now()) @db.Timestamp(6)
   upgrade_goal_assist_applied Boolean?            @default(false)
   upgrade_actions_applied     Boolean?            @default(false)
+  wins                        Int?                @default(0)
+  team_goals                  Int?                @default(0)
+  ga                          Int?                @default(0)
+  cs                          Int?                @default(0)
   fantasy_fc_players          fantasy_fc_players? @relation(fields: [player_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 

@@ -227,9 +227,16 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const position = player.position
   const defender = isDefOrGK(position)
 
-  const goals = stats?.goals ?? 0
+  // Stats come from fifauteam scraper (live, updated 2x/day)
+  // ga = Goals/Assists combined counter (threshold 1 → PS+)
+  // team_goals = team's total goals in window (threshold 10 → Face Stat 99)
+  // wins = team wins in window (threshold 6 → +1 OVR)
+  const ga = (stats as any)?.ga ?? stats?.goals ?? 0
+  const goals = ga  // used for G/A threshold check
   const assists = stats?.assists ?? 0
-  const cleanSheets = stats?.clean_sheets ?? 0
+  const cleanSheets = (stats as any)?.cs ?? stats?.clean_sheets ?? 0
+  const teamGoals = (stats as any)?.team_goals ?? 0
+  const wins = (stats as any)?.wins ?? 0
   const attackingActions = stats?.attacking_actions ?? 0
   const defensiveActions = stats?.defensive_actions ?? 0
 
@@ -251,7 +258,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const defActionsEarnedAt = (defensiveActions >= DEF_ACTIONS_THRESHOLD)
     ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'def_actions', DEF_ACTIONS_THRESHOLD)
     : null
-  const goalsEarnedAt = (goals >= 10)
+  const goalsEarnedAt = (teamGoals >= 10)
     ? findDateWhenThresholdCrossed(allLeagueMatchesSorted, 'goals', 10)
     : null
 
@@ -483,18 +490,24 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                   <div className="text-white/40 text-xs">Games</div>
                 </div>
 
-                {/* Goals */}
+                {/* G/A combined */}
                 <div className="bg-white/5 rounded-lg p-3 text-center">
                   <div className="text-2xl mb-1">⚽</div>
-                  <div className="text-white font-bold text-xl">{goals}</div>
-                  <div className="text-white/40 text-xs">Goals</div>
+                  <div className="text-white font-bold text-xl">
+                    {ga}
+                    <span className="text-white/30 text-base"> / 1</span>
+                  </div>
+                  <div className="text-white/40 text-xs">G/A</div>
                 </div>
 
-                {/* Assists */}
+                {/* Wins */}
                 <div className="bg-white/5 rounded-lg p-3 text-center">
-                  <div className="text-2xl mb-1">🅰️</div>
-                  <div className="text-white font-bold text-xl">{assists}</div>
-                  <div className="text-white/40 text-xs">Assists</div>
+                  <div className="text-2xl mb-1">🏆</div>
+                  <div className="text-white font-bold text-xl">
+                    {wins}
+                    <span className="text-white/30 text-base"> / 6</span>
+                  </div>
+                  <div className="text-white/40 text-xs">Wins</div>
                 </div>
 
                 {/* Position-specific: CS for defenders/GK, else Actions */}
@@ -538,7 +551,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                     type="G/A"
                     icon="⚽"
                     threshold={1}
-                    current={goals + assists}
+                    current={ga}
                     unit="goals + assists needed"
                     reward="2nd PlayStyle+"
                     earnedAt={gaEarnedAt}
@@ -560,13 +573,26 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
                   gamesPlayed={Math.min(gamesPlayed, GAMES_WINDOW)}
                 />
 
-                {/* Upgrade 3: 10 Goals — same for all */}
+                {/* Upgrade 3: 6 Wins → +1 OVR */}
                 <UpgradeProgressCard
-                  type="10 Goals"
+                  type="6 Wins"
+                  icon="🏆"
+                  threshold={6}
+                  current={wins}
+                  unit="wins needed"
+                  reward="+1 OVR"
+                  earnedAt={null}
+                  appliedAt={null}
+                  gamesPlayed={Math.min(gamesPlayed, GAMES_WINDOW)}
+                />
+
+                {/* Upgrade 4: Team 10 Goals — same for all */}
+                <UpgradeProgressCard
+                  type="10 Goals (Team)"
                   icon="🔥"
                   threshold={10}
-                  current={goals}
-                  unit="total goals needed"
+                  current={teamGoals}
+                  unit="team goals needed"
                   reward="Face Stat 99"
                   earnedAt={goalsEarnedAt}
                   appliedAt={goalsAppliedAt}

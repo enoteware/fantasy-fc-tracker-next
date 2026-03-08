@@ -141,6 +141,41 @@ async function main() {
       if (!rows.length) { notFound++; continue; }
       const player = rows[0];
 
+      // Upsert live stats into fantasy_fc_player_stats
+      const isDefGK = ['GK','CB','LB','RB','LWB','RWB'].includes(player.position);
+      const attActions = isDefGK ? 0 : p.stats.contributions;
+      const defActions = isDefGK ? p.stats.contributions : 0;
+      await client.query(`
+        INSERT INTO fantasy_fc_player_stats (
+          player_id, goals, assists, clean_sheets,
+          attacking_actions, defensive_actions,
+          wins, team_goals, ga, cs,
+          created_at, updated_at
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW(),NOW())
+        ON CONFLICT (player_id) DO UPDATE SET
+          goals = EXCLUDED.goals,
+          assists = EXCLUDED.assists,
+          clean_sheets = EXCLUDED.clean_sheets,
+          attacking_actions = EXCLUDED.attacking_actions,
+          defensive_actions = EXCLUDED.defensive_actions,
+          wins = EXCLUDED.wins,
+          team_goals = EXCLUDED.team_goals,
+          ga = EXCLUDED.ga,
+          cs = EXCLUDED.cs,
+          updated_at = NOW()
+      `, [
+        player.id,
+        p.stats.ga,          // goals = G/A counter (individual, not team)
+        0,                   // assists separate not available on fifauteam
+        p.stats.cs,          // clean_sheets
+        attActions,
+        defActions,
+        p.stats.wins,
+        p.stats.teamGoals,
+        p.stats.ga,
+        p.stats.cs,
+      ]);
+
       // Upsert earned upgrade badges into fantasy_fc_upgrades
       for (const badge of p.upgrades) {
         await client.query(`
